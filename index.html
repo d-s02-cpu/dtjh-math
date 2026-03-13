@@ -12,8 +12,10 @@
         .quiz-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 90%; max-width: 520px; border-top: 10px solid var(--primary); }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .header h1 { font-size: 1.6em; color: var(--primary); margin: 0; letter-spacing: 1px; }
+        
         .topic-card { border: 2px solid #dcdde1; border-radius: 15px; padding: 20px; margin-bottom: 20px; background: #fff; transition: 0.3s; }
         .topic-title { font-size: 1.2em; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center; display: block; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
         .home-menu { animation: fadeIn 0.5s; }
         .lv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .menu-btn { padding: 12px 5px; border: none; border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: 0.2s; color: white; font-weight: bold; }
@@ -21,6 +23,12 @@
         .btn-lv2 { background: #9b59b6; }
         .btn-lv3 { background: #e67e22; }
         .menu-btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        /* QR Code 區塊樣式 */
+        .qrcode-section { text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
+        .qrcode-title { font-size: 0.9em; color: #7f8c8d; margin-bottom: 10px; font-weight: bold; }
+        #qrcode-img { width: 120px; height: 120px; background: #eee; border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
         .disabled-card { opacity: 0.6; background: #f9f9f9; border-style: dashed; }
         #quiz-section { display: none; animation: fadeIn 0.5s; }
         .sequence-box { font-size: 1.3em; font-weight: bold; text-align: center; background: #f8f9fb; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #dee2e6; color: #2c3e50; line-height: 1.6; }
@@ -59,7 +67,14 @@
             <div class="topic-title">等差數列，求項數 \(n\)</div>
             <div style="text-align: center; color: #999; font-size: 0.9em;">(即將開放)</div>
         </div>
+
+        <div class="qrcode-section">
+            <div class="qrcode-title">平板掃描快速進入</div>
+            <img id="qrcode-img" src="" alt="QR Code">
+            <div style="font-size: 0.7em; color: #bdc3c7; margin-top: 5px;">(請將網頁部署至網路空間以產生 QR Code)</div>
+        </div>
     </div>
+
     <div id="quiz-section">
         <div id="progress" style="text-align:right; font-size:0.8em; color:#bdc3c7; margin-bottom:10px; font-weight:bold;"></div>
         <div id="sequence-display" class="sequence-box"></div>
@@ -75,6 +90,19 @@
 </div>
 
 <script>
+    // --- 新增：QR Code 產生邏輯 ---
+    window.onload = function() {
+        const currentUrl = window.location.href;
+        if (currentUrl.startsWith('http')) {
+            const qrApi = "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=";
+            document.getElementById('qrcode-img').src = qrApi + encodeURIComponent(currentUrl);
+        } else {
+            // 如果是本機開啟檔案，顯示提示圖案
+            document.getElementById('qrcode-img').src = "https://via.placeholder.com/150?text=Web+Only";
+        }
+    };
+
+    // --- 以下為原本的測驗邏輯 ---
     let currentStep = 0, quizData = {}, steps = [], conclusions = [], currentLevel = 1;
     function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
     function mathFmt(num) { return num < 0 ? `(${num})` : num; }
@@ -185,6 +213,7 @@
 
     function updateSummary() {
         const list = document.getElementById('summary-list');
+        if(!list) return;
         document.getElementById('summary-box').style.display = "block";
         list.innerHTML = conclusions.map(c => `<div class="summary-item">${c}</div>`).join('');
         if (window.MathJax) MathJax.typesetPromise();
