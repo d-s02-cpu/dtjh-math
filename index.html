@@ -1,22 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>苗栗大同國中數學練習系統</title>
-
-    <script>
-        MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            }
-        };
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
+    <meta charset="UTF-8">
+    <title>等差數列互動學習</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 600px; width: 100%; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .sequence { font-size: 1.5em; background: #eef2f3; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; letter-spacing: 2px; }
+        .question-block { margin-bottom: 25px; padding: 15px; border-left: 5px solid #3498db; background: #f9f9f9; }
+        .step-title { font-weight: bold; color: #34495e; margin-bottom: 10px; display: block; }
+        .input-box { border-bottom: 2px solid #bdc3c7; display: inline-block; min-width: 60px; text-align: center; cursor: pointer; color: transparent; transition: all 0.3s; font-weight: bold; }
+        .input-box.reveal { color: #e74c3c; border-bottom-color: #e74c3c; }
+        .hint { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #2980b9; }
+    </style>
 </head>
 <body>
-    <p>test $x^2$</p>
+
+<div class="card">
+    <h1>🔢 等差數列挑戰</h1>
+    <p>已知數列如下，點擊底線處來確認你的答案：</p>
+    
+    <div class="sequence">
+        15, 18, 21, 24, …… , 105
+    </div>
+
+    <div class="question-block">
+        <span class="step-title">(1) 找出公差 (d)</span>
+        計算方式：18 - 15 = <span class="input-box" onclick="this.classList.toggle('reveal')">3</span>
+        <div class="hint">💡 提示：後項減前項即可得到固定間隔。</div>
+    </div>
+
+    <div class="question-block">
+        <span class="step-title">(2) 第 18 項是多少？</span>
+        公式：$15 + (18 - 1) \times 3$ = <span class="input-box" onclick="this.classList.toggle('reveal')">66</span>
+        <div class="hint">💡 提示：從第 1 項開始，往後跨了 17 步。</div>
+    </div>
+
+    <div class="question-block">
+        <span class="step-title">(3) 此數列共有幾項？</span>
+        計算：$(105 - 15) \div 3 + 1$ = <span class="input-box" onclick="this.classList.toggle('reveal')">31</span>
+        <div class="hint">💡 提示：(末項 - 首項) ÷ 公差 + 1。</div>
+    </div>
+
+    <button onclick="resetAll()">重置題目</button>
+</div>
+
+<script>
+    function resetAll() {
+        document.querySelectorAll('.input-box').forEach(el => el.classList.remove('reveal'));
+    }
+</script>
+
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 </body>
 </html>
