@@ -2,60 +2,214 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>等差數列互動學習</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心數學練習網</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 600px; width: 100%; }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .sequence { font-size: 1.5em; background: #eef2f3; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; letter-spacing: 2px; }
-        .question-block { margin-bottom: 25px; padding: 15px; border-left: 5px solid #3498db; background: #f9f9f9; }
-        .step-title { font-weight: bold; color: #34495e; margin-bottom: 10px; display: block; }
-        .input-box { border-bottom: 2px solid #bdc3c7; display: inline-block; min-width: 60px; text-align: center; cursor: pointer; color: transparent; transition: all 0.3s; font-weight: bold; }
-        .input-box.reveal { color: #e74c3c; border-bottom-color: #e74c3c; }
-        .hint { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
-        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #2980b9; }
+        :root { --primary: #2c3e50; --secondary: #e67e22; --success: #27ae60; --error: #c0392b; --bg: #f2f5f8; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .quiz-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 90%; max-width: 520px; border-top: 10px solid var(--primary); }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .header h1 { font-size: 1.6em; color: var(--primary); margin: 0; letter-spacing: 1px; }
+        .topic-card { border: 2px solid #dcdde1; border-radius: 15px; padding: 20px; margin-bottom: 20px; background: #fff; transition: 0.3s; }
+        .topic-title { font-size: 1.2em; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center; display: block; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .home-menu { animation: fadeIn 0.5s; }
+        .lv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .menu-btn { padding: 12px 5px; border: none; border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: 0.2s; color: white; font-weight: bold; }
+        .btn-lv1 { background: #3498db; }
+        .btn-lv2 { background: #9b59b6; }
+        .btn-lv3 { background: #e67e22; }
+        .menu-btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .disabled-card { opacity: 0.6; background: #f9f9f9; border-style: dashed; }
+        #quiz-section { display: none; animation: fadeIn 0.5s; }
+        .sequence-box { font-size: 1.3em; font-weight: bold; text-align: center; background: #f8f9fb; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #dee2e6; color: #2c3e50; line-height: 1.6; }
+        .summary-box { background: #fffdf0; border: 1px dashed #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .summary-item { font-size: 1em; color: #2c3e50; margin: 5px 0; font-weight: bold; }
+        .step-label { color: #3498db; font-size: 0.9em; margin-bottom: 5px; font-weight: bold; }
+        .question-text { font-size: 1.15em; font-weight: bold; margin-bottom: 18px; color: #34495e; min-height: 2.2em; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .option-btn { padding: 14px 18px; border: 2px solid #edeff2; border-radius: 10px; background: white; cursor: pointer; text-align: left; font-size: 1.05em; transition: 0.2s; }
+        .option-btn:hover:not(:disabled) { background: #f0f7ff; border-color: #3498db; }
+        .option-btn.correct { background: var(--success) !important; color: white; border-color: var(--success); }
+        .option-btn.wrong { background: var(--error) !important; color: white; border-color: var(--error); }
+        .feedback { margin-top: 20px; font-weight: bold; text-align: center; min-height: 45px; }
+        .next-container { display: none; text-align: center; }
+        .next-step-btn { padding: 12px 40px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 1em; margin-top: 10px; }
+        .btn-retry { background: var(--success); color: white; padding: 12px 25px; border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; margin-right: 10px; }
+        .btn-home { background: #95a5a6; color: white; padding: 12px 25px; border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; }
+        .origin-q { background: #eaf4ff; border: 2px solid #3498db; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 1.1em; color: #2c3e50; text-align: center; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>🔢 等差數列挑戰</h1>
-    <p>已知數列如下，點擊底線處來確認你的答案：</p>
-    
-    <div class="sequence">
-        15, 18, 21, 24, …… , 105
+<div class="quiz-container">
+    <div class="header"><h1>苗栗大同國中資源中心</h1></div>
+    <div id="home-section" class="home-menu">
+        <div class="topic-card">
+            <div class="topic-title">等差數列，求第 \(n\) 項 \(a_n\)</div>
+            <div class="lv-grid">
+                <button class="menu-btn btn-lv1" onclick="startQuiz(1)">LV 1</button>
+                <button class="menu-btn btn-lv2" onclick="startQuiz(2)">LV 2</button>
+                <button class="menu-btn btn-lv3" onclick="startQuiz(3)">LV 3</button>
+            </div>
+        </div>
+        <div class="topic-card disabled-card">
+            <div class="topic-title">等差數列，求項數 \(n\)</div>
+            <div style="text-align: center; color: #999; font-size: 0.9em;">(即將開放)</div>
+        </div>
     </div>
-
-    <div class="question-block">
-        <span class="step-title">(1) 找出公差 (d)</span>
-        計算方式：18 - 15 = <span class="input-box" onclick="this.classList.toggle('reveal')">3</span>
-        <div class="hint">💡 提示：後項減前項即可得到固定間隔。</div>
+    <div id="quiz-section">
+        <div id="progress" style="text-align:right; font-size:0.8em; color:#bdc3c7; margin-bottom:10px; font-weight:bold;"></div>
+        <div id="sequence-display" class="sequence-box"></div>
+        <div id="summary-box" class="summary-box" style="display:none;"><div id="summary-list"></div></div>
+        <div id="quiz-content">
+            <div id="step-name" class="step-label"></div>
+            <div id="question" class="question-text"></div>
+            <div id="options-container" class="options-grid"></div>
+            <div id="feedback" class="feedback"></div>
+            <div id="next-btn-area" class="next-container"><button class="next-step-btn" onclick="goToNextStep()">下一步 →</button></div>
+        </div>
     </div>
-
-    <div class="question-block">
-        <span class="step-title">(2) 第 18 項是多少？</span>
-        公式：$15 + (18 - 1) \times 3$ = <span class="input-box" onclick="this.classList.toggle('reveal')">66</span>
-        <div class="hint">💡 提示：從第 1 項開始，往後跨了 17 步。</div>
-    </div>
-
-    <div class="question-block">
-        <span class="step-title">(3) 此數列共有幾項？</span>
-        計算：$(105 - 15) \div 3 + 1$ = <span class="input-box" onclick="this.classList.toggle('reveal')">31</span>
-        <div class="hint">💡 提示：(末項 - 首項) ÷ 公差 + 1。</div>
-    </div>
-
-    <button onclick="resetAll()">重置題目</button>
 </div>
 
 <script>
-    function resetAll() {
-        document.querySelectorAll('.input-box').forEach(el => el.classList.remove('reveal'));
+    let currentStep = 0, quizData = {}, steps = [], conclusions = [], currentLevel = 1;
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function mathFmt(num) { return num < 0 ? `(${num})` : num; }
+    function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+    function startQuiz(lv) {
+        currentLevel = lv; currentStep = 0; conclusions = [];
+        document.getElementById('home-section').style.display = 'none';
+        document.getElementById('quiz-section').style.display = 'block';
+        resetQuizHTML(); generateQuiz(); renderStep();
+    }
+
+    function resetQuizHTML() {
+        document.getElementById('quiz-section').innerHTML = `
+            <div id="progress" style="text-align:right; font-size:0.8em; color:#bdc3c7; margin-bottom:10px; font-weight:bold;"></div>
+            <div id="sequence-display" class="sequence-box"></div>
+            <div id="summary-box" class="summary-box" style="display:none;"><div id="summary-list"></div></div>
+            <div id="quiz-content">
+                <div id="step-name" class="step-label"></div>
+                <div id="question" class="question-text"></div>
+                <div id="options-container" class="options-grid"></div>
+                <div id="feedback" class="feedback"></div>
+                <div id="next-btn-area" class="next-container"><button class="next-step-btn" onclick="goToNextStep()">下一步 →</button></div>
+            </div>`;
+    }
+
+    function generateQuiz() {
+        let a1, d, targetN = rand(12, 20);
+        if (currentLevel === 1) { a1 = rand(5, 15); d = rand(3, 7); } 
+        else if (currentLevel === 2) { 
+            if(Math.random() > 0.5) { a1 = rand(60, 100); d = -rand(2, 3); } 
+            else { a1 = -rand(5, 15); d = -rand(3, 6); } 
+        } else { 
+            let type = rand(1, 3);
+            if(type === 1) { a1 = rand(10, 25); d = -rand(4, 7); } 
+            else if(type === 2) { a1 = -rand(50, 80); d = rand(2, 3); } 
+            else { a1 = -rand(10, 25); d = rand(4, 7); } 
+        }
+        const a2 = a1 + d, a3 = a1 + 2 * d, totalGapValue = (targetN - 1) * d, result = a1 + totalGapValue;
+        quizData = { a1, a2, a3, d, targetN, result, totalGapValue };
+        document.getElementById('sequence-display').innerHTML = `等差數列：${a1}, ${a2}, ${a3}, ……<br>求第 ${targetN} 項是多少？`;
+
+        const x = Math.abs(a2), y = Math.abs(a1);
+        let potentialWrong = [...new Set([x + y, x - y, -x + y, -x - y, d+1, d-1])].filter(v => v !== d);
+
+        steps = [
+            { title: "步驟 (1)：確定公差算式", q: "哪一個算式可以算出公差？", summary: `✅ 算出公差的方法：\\(${mathFmt(a2)} - ${mathFmt(a1)}\\)`,
+                options: shuffle([
+                    { text: `\\(${mathFmt(a2)} - ${mathFmt(a1)}\\)`, type: 'correct', msg: "✅ 沒錯！用第2項減第1項。" },
+                    { text: `\\(${mathFmt(a1)} - ${mathFmt(a2)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" },
+                    { text: `\\(${mathFmt(a3)} - ${mathFmt(a1)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" },
+                    { text: `\\(${mathFmt(a2)} - ${mathFmt(a3)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" }
+                ])
+            },
+            { title: "步驟 (2)：求出公差 d 的值", q: `根據剛才的算式 \\(${mathFmt(a2)} - ${mathFmt(a1)}\\)，公差 \\(d\\) 是多少？`, summary: `✅ 公差 \\(d = ${d}\\)`, 
+                options: shuffle([{ text: `${d}`, type: 'correct', msg: `✅ 正確！算出公差為 ${d}。` },
+                    ...potentialWrong.slice(0, 3).map(val => ({ text: `${val}`, type: 'wrong', msg: "❌ 計算不對喔，請再次檢查正負號與運算。" }))])
+            },
+            { title: "步驟 (3)：計算增加次數", q: `從第 1 項到第 ${targetN} 項，增加了幾次公差？`, summary: `✅ 增加次數 = ${targetN - 1} 次`,
+                options: shuffle([{ text: `${targetN - 1} 次`, type: 'correct', msg: "✅ 對！增加次數 = 項數 - 1。" },
+                    { text: `${targetN} 次`, type: 'wrong', msg: "❌ 錯囉，增加次數 = 項數 - 1。" },
+                    { text: `${targetN + 1} 次`, type: 'wrong', msg: "❌ 錯囉，增加次數 = 項數 - 1。" }])
+            },
+            { title: "步驟 (4)：求出總共增加了多少", q: `增加了 ${targetN - 1} 次公差，總共增加了多少？`, summary: `✅ 總共增加了：${totalGapValue}`,
+                options: shuffle([
+                    { text: `${totalGapValue}`, type: 'correct', msg: "✅ 對！總增加 = 增加次數 × 公差。" },
+                    { text: `${totalGapValue + 10}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" },
+                    { text: `${totalGapValue - 10}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" },
+                    { text: `${totalGapValue + (totalGapValue > 0 ? 20 : -20)}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" }
+                ])
+            },
+            { title: "步驟 (5)：算出最終結果", q: `首項 = ${a1}，加上總共增加的 ${totalGapValue}，最後是多少？`, summary: `✅ 第 ${targetN} 項 = ${result}`,
+                options: shuffle([{ text: `${result}`, type: 'correct', msg: "✅ 太棒了！順利求出答案。" },
+                    { text: `${result + 10}`, type: 'wrong', msg: "❌ 最後一步加法算錯囉，請檢查個位數與進位。" },
+                    { text: `${a1 - totalGapValue}`, type: 'wrong', msg: "❌ 應該是將首項加上增加的數值。" }])
+            }
+        ];
+    }
+
+    function renderStep() {
+        const data = steps[currentStep];
+        document.getElementById('progress').innerText = `STEP ${currentStep + 1} / 5`;
+        document.getElementById('step-name').innerText = data.title;
+        document.getElementById('question').innerHTML = data.q;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('next-btn-area').style.display = "none";
+        const optDiv = document.getElementById('options-container');
+        optDiv.innerHTML = "";
+        data.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn'; btn.innerHTML = opt.text;
+            btn.onclick = () => {
+                if(opt.type === 'correct') {
+                    btn.classList.add('correct');
+                    document.getElementById('feedback').innerHTML = `<span style='color:var(--success)'>${opt.msg}</span>`;
+                    optDiv.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+                    if (conclusions.length <= currentStep) conclusions.push(data.summary);
+                    updateSummary(); document.getElementById('next-btn-area').style.display = "block";
+                } else {
+                    btn.classList.add('wrong');
+                    document.getElementById('feedback').innerHTML = `<span style='color:var(--error)'>${opt.msg}</span>`;
+                }
+            };
+            optDiv.appendChild(btn);
+        });
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+
+    function updateSummary() {
+        const list = document.getElementById('summary-list');
+        document.getElementById('summary-box').style.display = "block";
+        list.innerHTML = conclusions.map(c => `<div class="summary-item">${c}</div>`).join('');
+        if (window.MathJax) MathJax.typesetPromise();
+    }
+    function goToNextStep() { if (++currentStep < 5) renderStep(); else showFinal(); }
+
+    function showFinal() {
+        const quizSection = document.getElementById('quiz-section');
+        const finalFormula = `${quizData.a1} + ${mathFmt(quizData.totalGapValue)} = ${quizData.result}`;
+        quizSection.innerHTML = `
+            <div style="text-align:center;">
+                <h2 style="color:var(--success)">🎯 挑戰完成！</h2>
+                <div class="origin-q">回顧題目：等差數列 ${quizData.a1}, ${quizData.a2}, ${quizData.a3}, …… 求第 ${quizData.targetN} 項？</div>
+                <div style="text-align:left; background:#fdfdfd; padding:20px; border-radius:12px; border:1px solid #ddd; margin-bottom: 20px;">
+                    <p style="color:var(--primary); font-weight:bold;">解題步驟回顧：</p>
+                    <p>1. 算出公差 \\(d = ${quizData.d}\\)</p>
+                    <p>2. 算出增加次數 = ${quizData.targetN - 1} 次</p>
+                    <p>3. 算出總增加值 = ${quizData.totalGapValue}</p>
+                    <p>4. 最後結果：\\(${finalFormula}\\)</p>
+                </div>
+                <button class="btn-retry" onclick="startQuiz(currentLevel)">再練一題</button>
+                <button class="btn-home" onclick="location.reload()">回首頁</button>
+            </div>`;
+        if (window.MathJax) MathJax.typesetPromise();
     }
 </script>
-
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
 </body>
 </html>
