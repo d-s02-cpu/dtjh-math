@@ -9,7 +9,7 @@
     <style>
         :root { --primary: #2c3e50; --secondary: #e67e22; --success: #27ae60; --error: #c0392b; --bg: #f2f5f8; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .quiz-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 90%; max-width: 520px; border-top: 10px solid var(--primary); }
+        .quiz-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 90%; max-width: 520px; border-top: 10px solid var(--primary); position: relative; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .header h1 { font-size: 1.6em; color: var(--primary); margin: 0; letter-spacing: 1px; }
         
@@ -27,7 +27,7 @@
         /* QR Code 區塊樣式 */
         .qrcode-section { text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
         .qrcode-title { font-size: 0.9em; color: #7f8c8d; margin-bottom: 10px; font-weight: bold; }
-        #qrcode-img { width: 120px; height: 120px; background: #eee; border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #qrcode-img { width: 130px; height: 130px; background: #f8f9fb; border: 1px solid #eee; padding: 5px; cursor: pointer; }
 
         .disabled-card { opacity: 0.6; background: #f9f9f9; border-style: dashed; }
         #quiz-section { display: none; animation: fadeIn 0.5s; }
@@ -69,9 +69,9 @@
         </div>
 
         <div class="qrcode-section">
-            <div class="qrcode-title">平板掃描快速進入</div>
-            <img id="qrcode-img" src="" alt="QR Code">
-            <div style="font-size: 0.7em; color: #bdc3c7; margin-top: 5px;">(請將網頁部署至網路空間以產生 QR Code)</div>
+            <div class="qrcode-title">學生平板掃描專區</div>
+            <img id="qrcode-img" title="點擊重新載入 QR Code" alt="QR Code 加載中...">
+            <p id="url-text" style="font-size: 0.6em; color: #95a5a6; margin-top: 5px; word-break: break-all;"></p>
         </div>
     </div>
 
@@ -90,19 +90,33 @@
 </div>
 
 <script>
-    // --- 新增：QR Code 產生邏輯 ---
-    window.onload = function() {
+    // --- QR Code 產生功能 ---
+    function generateQRCode() {
         const currentUrl = window.location.href;
-        if (currentUrl.startsWith('http')) {
-            const qrApi = "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=";
-            document.getElementById('qrcode-img').src = qrApi + encodeURIComponent(currentUrl);
-        } else {
-            // 如果是本機開啟檔案，顯示提示圖案
-            document.getElementById('qrcode-img').src = "https://via.placeholder.com/150?text=Web+Only";
-        }
-    };
+        const qrImg = document.getElementById('qrcode-img');
+        const urlText = document.getElementById('url-text');
+        
+        // 顯示目前抓到的網址（方便除錯）
+        urlText.innerText = currentUrl;
 
-    // --- 以下為原本的測驗邏輯 ---
+        // 使用快速且穩定的 QR API (這家比 Google 更快)
+        const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=";
+        qrImg.src = qrApi + encodeURIComponent(currentUrl);
+        
+        // 點擊圖片可以強迫重新載入
+        qrImg.onclick = function() {
+            this.src = qrApi + encodeURIComponent(window.location.href) + "&t=" + new Date().getTime();
+        };
+    }
+
+    // 確保頁面載入後執行
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+        generateQRCode();
+    } else {
+        document.addEventListener("DOMContentLoaded", generateQRCode);
+    }
+
+    // --- 測驗邏輯 (保持不變) ---
     let currentStep = 0, quizData = {}, steps = [], conclusions = [], currentLevel = 1;
     function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
     function mathFmt(num) { return num < 0 ? `(${num})` : num; }
