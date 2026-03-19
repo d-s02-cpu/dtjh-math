@@ -3,256 +3,463 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>苗栗大同國中資源中心數學練習網</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>苗栗大同國中資源中心 - 等差數列練習</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
-        :root { --primary: #2c3e50; --secondary: #e67e22; --success: #27ae60; --error: #c0392b; --bg: #f2f5f8; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .quiz-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 90%; max-width: 520px; border-top: 10px solid var(--primary); position: relative; }
-        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .header h1 { font-size: 1.6em; color: var(--primary); margin: 0; letter-spacing: 1px; }
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4caf50; /* 模式二底色 */
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+            --step-bg: #fffbe6;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; text-align: center;
+        }
+        .question-text { font-size: 1.1rem; color: #555; margin-bottom: 0.5rem; text-align: left; }
+        #question-box {
+            font-size: 1.8rem; margin: 0.5rem 0 1.5rem 0; padding: 1rem;
+            background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
+        }
+        .step-container {
+            margin-top: 1rem; padding: 1rem; border-radius: 15px;
+            background: var(--step-bg); border: 1px dashed #ffe58f;
+            display: none; 
+        }
+        .step-title { font-weight: bold; margin-bottom: 10px; color: #856404; display: block; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; align-items: center; }
+        .mode-badge { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #555; }
         
-        .topic-card { border: 2px solid #dcdde1; border-radius: 15px; padding: 20px; margin-bottom: 20px; background: #fff; transition: 0.3s; }
-        .topic-title { font-size: 1.2em; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center; display: block; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
         
-        .home-menu { animation: fadeIn 0.5s; }
-        .lv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .menu-btn { padding: 12px 5px; border: none; border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: 0.2s; color: white; font-weight: bold; }
-        .btn-lv1 { background: #3498db; }
-        .btn-lv2 { background: #9b59b6; }
-        .btn-lv3 { background: #e67e22; }
-        .menu-btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        
-        /* QR Code 區塊樣式 */
-        .qrcode-section { text-align: center; margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
-        .qrcode-title { font-size: 0.9em; color: #7f8c8d; margin-bottom: 10px; font-weight: bold; }
-        #qrcode-img { width: 130px; height: 130px; background: #f8f9fb; border: 1px solid #eee; padding: 5px; cursor: pointer; }
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        .desc-text { color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
 
-        .disabled-card { opacity: 0.6; background: #f9f9f9; border-style: dashed; }
-        #quiz-section { display: none; animation: fadeIn 0.5s; }
-        .sequence-box { font-size: 1.3em; font-weight: bold; text-align: center; background: #f8f9fb; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #dee2e6; color: #2c3e50; line-height: 1.6; }
-        .summary-box { background: #fffdf0; border: 1px dashed #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .summary-item { font-size: 1em; color: #2c3e50; margin: 5px 0; font-weight: bold; }
-        .step-label { color: #3498db; font-size: 0.9em; margin-bottom: 5px; font-weight: bold; }
-        .question-text { font-size: 1.15em; font-weight: bold; margin-bottom: 18px; color: #34495e; min-height: 2.2em; }
-        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        .option-btn { padding: 14px 18px; border: 2px solid #edeff2; border-radius: 10px; background: white; cursor: pointer; text-align: left; font-size: 1.05em; transition: 0.2s; }
-        .option-btn:hover:not(:disabled) { background: #f0f7ff; border-color: #3498db; }
-        .option-btn.correct { background: var(--success) !important; color: white; border-color: var(--success); }
-        .option-btn.wrong { background: var(--error) !important; color: white; border-color: var(--error); }
-        .feedback { margin-top: 20px; font-weight: bold; text-align: center; min-height: 45px; }
-        .next-container { display: none; text-align: center; }
-        .next-step-btn { padding: 12px 40px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 1em; margin-top: 10px; }
-        .btn-retry { background: var(--success); color: white; padding: 12px 25px; border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; margin-right: 10px; }
-        .btn-home { background: #95a5a6; color: white; padding: 12px 25px; border: none; border-radius: 12px; font-size: 1em; font-weight: bold; cursor: pointer; }
-        .origin-q { background: #eaf4ff; border: 2px solid #3498db; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 1.1em; color: #2c3e50; text-align: center; font-weight: bold; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #qrcode-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
 
-<div class="quiz-container">
-    <div class="header"><h1>苗栗大同國中資源中心</h1></div>
-    <div id="home-section" class="home-menu">
-        <div class="topic-card">
-            <div class="topic-title">等差數列，求第 \(n\) 項 \(a_n\)</div>
-            <div class="lv-grid">
-                <button class="menu-btn btn-lv1" onclick="startQuiz(1)">LV 1</button>
-                <button class="menu-btn btn-lv2" onclick="startQuiz(2)">LV 2</button>
-                <button class="menu-btn btn-lv3" onclick="startQuiz(3)">LV 3</button>
-            </div>
-        </div>
-        <div class="topic-card disabled-card">
-            <div class="topic-title">等差數列，求項數 \(n\)</div>
-            <div style="text-align: center; color: #999; font-size: 0.9em;">(即將開放)</div>
-        </div>
-
-        <div class="qrcode-section">
-            <div class="qrcode-title">學生平板掃描專區</div>
-            <img id="qrcode-img" title="點擊重新載入 QR Code" alt="QR Code 加載中...">
-            <p id="url-text" style="font-size: 0.6em; color: #95a5a6; margin-top: 5px; word-break: break-all;"></p>
-        </div>
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3>等差數列循序練習</h3>
+    <div class="desc-text">
+        請選擇練習題型：<br>
+        難度隨題號增加：純正數 $\rightarrow$ 純負數 $\rightarrow$ 異號。
     </div>
-
-    <div id="quiz-section">
-        <div id="progress" style="text-align:right; font-size:0.8em; color:#bdc3c7; margin-bottom:10px; font-weight:bold;"></div>
-        <div id="sequence-display" class="sequence-box"></div>
-        <div id="summary-box" class="summary-box" style="display:none;"><div id="summary-list"></div></div>
-        <div id="quiz-content">
-            <div id="step-name" class="step-label"></div>
-            <div id="question" class="question-text"></div>
-            <div id="options-container" class="options-grid"></div>
-            <div id="feedback" class="feedback"></div>
-            <div id="next-btn-area" class="next-container"><button class="next-step-btn" onclick="goToNextStep()">下一步 →</button></div>
-        </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('findD')">模式一：求公差 $d$</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('findAn')">模式二：求第 $n$ 項 $a_n$</button>
+    </div>
+    
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
     </div>
 </div>
 
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 1 題 / 共 10 題</span>
+        <span id="mode-badge" class="mode-badge">練習模式</span>
+    </div>
+
+    <div class="question-text" id="mode-text">等差數列 $a_1, a_2, a_3, \dots$，求公差 $d$：</div>
+    <div id="question-box"></div>
+
+    <div id="step1" class="step-container" style="display: block;">
+        <span class="step-title" id="step1-title">Q1. 哪一個算式可以算出公差 $d$？</span>
+        <div id="q1-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options1"></div>
+    </div>
+
+    <div id="step2" class="step-container">
+        <span class="step-title" id="step2-hint"></span>
+        <div id="q2-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options2"></div>
+    </div>
+
+    <div id="step3" class="step-container">
+        <span class="step-title" id="step3-hint"></span>
+        <div id="q3-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options3"></div>
+    </div>
+
+    <div id="step4" class="step-container">
+        <span class="step-title" id="step4-hint"></span>
+        <div id="q4-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options4"></div>
+    </div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">0</div>
+    <p>滿分 100 分，測驗結束。</p>
+    <button class="btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
 <script>
-    // --- QR Code 產生功能 ---
-    function generateQRCode() {
-        const currentUrl = window.location.href;
-        const qrImg = document.getElementById('qrcode-img');
-        const urlText = document.getElementById('url-text');
+    let quizMode = 'findD';
+    let currentD = 0;
+    let currentA1 = 0;
+    let currentA2 = 0;
+    let currentN = 0;
+    let questionCount = 0;
+    let totalScore = 0;
+    let isFirstTryQ1 = true; 
+    let isFirstTryQ2 = true; 
+    let isFirstTryQ3 = true;
+    let isFirstTryQ4 = true;
+
+    function formatNum(num, isLeading = false) {
+        if (num < 0 && !isLeading) return `(${num})`;
+        return num.toString();
+    }
+
+    function startQuiz(mode) {
+        quizMode = mode;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
         
-        // 顯示目前抓到的網址（方便除錯）
-        urlText.innerText = currentUrl;
-
-        // 使用快速且穩定的 QR API (這家比 Google 更快)
-        const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=";
-        qrImg.src = qrApi + encodeURIComponent(currentUrl);
-        
-        // 點擊圖片可以強迫重新載入
-        qrImg.onclick = function() {
-            this.src = qrApi + encodeURIComponent(window.location.href) + "&t=" + new Date().getTime();
-        };
-    }
-
-    // 確保頁面載入後執行
-    if (document.readyState === "complete" || document.readyState === "interactive") {
-        generateQRCode();
-    } else {
-        document.addEventListener("DOMContentLoaded", generateQRCode);
-    }
-
-    // --- 測驗邏輯 (保持不變) ---
-    let currentStep = 0, quizData = {}, steps = [], conclusions = [], currentLevel = 1;
-    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    function mathFmt(num) { return num < 0 ? `(${num})` : num; }
-    function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
-
-    function startQuiz(lv) {
-        currentLevel = lv; currentStep = 0; conclusions = [];
-        document.getElementById('home-section').style.display = 'none';
-        document.getElementById('quiz-section').style.display = 'block';
-        resetQuizHTML(); generateQuiz(); renderStep();
-    }
-
-    function resetQuizHTML() {
-        document.getElementById('quiz-section').innerHTML = `
-            <div id="progress" style="text-align:right; font-size:0.8em; color:#bdc3c7; margin-bottom:10px; font-weight:bold;"></div>
-            <div id="sequence-display" class="sequence-box"></div>
-            <div id="summary-box" class="summary-box" style="display:none;"><div id="summary-list"></div></div>
-            <div id="quiz-content">
-                <div id="step-name" class="step-label"></div>
-                <div id="question" class="question-text"></div>
-                <div id="options-container" class="options-grid"></div>
-                <div id="feedback" class="feedback"></div>
-                <div id="next-btn-area" class="next-container"><button class="next-step-btn" onclick="goToNextStep()">下一步 →</button></div>
-            </div>`;
-    }
-
-    function generateQuiz() {
-        let a1, d, targetN = rand(12, 20);
-        if (currentLevel === 1) { a1 = rand(5, 15); d = rand(3, 7); } 
-        else if (currentLevel === 2) { 
-            if(Math.random() > 0.5) { a1 = rand(60, 100); d = -rand(2, 3); } 
-            else { a1 = -rand(5, 15); d = -rand(3, 6); } 
-        } else { 
-            let type = rand(1, 3);
-            if(type === 1) { a1 = rand(10, 25); d = -rand(4, 7); } 
-            else if(type === 2) { a1 = -rand(50, 80); d = rand(2, 3); } 
-            else { a1 = -rand(10, 25); d = rand(4, 7); } 
+        if (quizMode === 'findD') {
+            document.getElementById('mode-badge').innerText = '目前模式：求公差 d';
+            document.getElementById('mode-text').innerText = '等差數列 $a_1, a_2, a_3, \\dots$，求公差 $d$：';
+            document.getElementById('step1-title').innerText = 'Q1. 哪一個算式可以算出公差 $d$？';
+        } else {
+            document.getElementById('mode-badge').innerText = '目前模式：求第 n 項';
+            document.getElementById('mode-text').innerText = '等差數列 $a_1, a_2, a_3, \\dots$，求指定的 $a_n$：';
+            document.getElementById('step1-title').innerText = 'Q1. 公差 $d = ?$';
         }
-        const a2 = a1 + d, a3 = a1 + 2 * d, totalGapValue = (targetN - 1) * d, result = a1 + totalGapValue;
-        quizData = { a1, a2, a3, d, targetN, result, totalGapValue };
-        document.getElementById('sequence-display').innerHTML = `等差數列：${a1}, ${a2}, ${a3}, ……<br>求第 ${targetN} 項是多少？`;
-
-        const x = Math.abs(a2), y = Math.abs(a1);
-        let potentialWrong = [...new Set([x + y, x - y, -x + y, -x - y, d+1, d-1])].filter(v => v !== d);
-
-        steps = [
-            { title: "步驟 (1)：確定公差算式", q: "哪一個算式可以算出公差？", summary: `✅ 算出公差的方法：\\(${mathFmt(a2)} - ${mathFmt(a1)}\\)`,
-                options: shuffle([
-                    { text: `\\(${mathFmt(a2)} - ${mathFmt(a1)}\\)`, type: 'correct', msg: "✅ 沒錯！用第2項減第1項。" },
-                    { text: `\\(${mathFmt(a1)} - ${mathFmt(a2)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" },
-                    { text: `\\(${mathFmt(a3)} - ${mathFmt(a1)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" },
-                    { text: `\\(${mathFmt(a2)} - ${mathFmt(a3)}\\)`, type: 'wrong', msg: "❌ 錯囉，請用「第2項減第1項」。" }
-                ])
-            },
-            { title: "步驟 (2)：求出公差 d 的值", q: `根據剛才的算式 \\(${mathFmt(a2)} - ${mathFmt(a1)}\\)，公差 \\(d\\) 是多少？`, summary: `✅ 公差 \\(d = ${d}\\)`, 
-                options: shuffle([{ text: `${d}`, type: 'correct', msg: `✅ 正確！算出公差為 ${d}。` },
-                    ...potentialWrong.slice(0, 3).map(val => ({ text: `${val}`, type: 'wrong', msg: "❌ 計算不對喔，請再次檢查正負號與運算。" }))])
-            },
-            { title: "步驟 (3)：計算增加次數", q: `從第 1 項到第 ${targetN} 項，增加了幾次公差？`, summary: `✅ 增加次數 = ${targetN - 1} 次`,
-                options: shuffle([{ text: `${targetN - 1} 次`, type: 'correct', msg: "✅ 對！增加次數 = 項數 - 1。" },
-                    { text: `${targetN} 次`, type: 'wrong', msg: "❌ 錯囉，增加次數 = 項數 - 1。" },
-                    { text: `${targetN + 1} 次`, type: 'wrong', msg: "❌ 錯囉，增加次數 = 項數 - 1。" }])
-            },
-            { title: "步驟 (4)：求出總共增加了多少", q: `增加了 ${targetN - 1} 次公差，總共增加了多少？`, summary: `✅ 總共增加了：${totalGapValue}`,
-                options: shuffle([
-                    { text: `${totalGapValue}`, type: 'correct', msg: "✅ 對！總增加 = 增加次數 × 公差。" },
-                    { text: `${totalGapValue + 10}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" },
-                    { text: `${totalGapValue - 10}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" },
-                    { text: `${totalGapValue + (totalGapValue > 0 ? 20 : -20)}`, type: 'wrong', msg: "❌ 運算有誤，請再仔細計算一次乘法。" }
-                ])
-            },
-            { title: "步驟 (5)：算出最終結果", q: `首項 = ${a1}，加上總共增加的 ${totalGapValue}，最後是多少？`, summary: `✅ 第 ${targetN} 項 = ${result}`,
-                options: shuffle([{ text: `${result}`, type: 'correct', msg: "✅ 太棒了！順利求出答案。" },
-                    { text: `${result + 10}`, type: 'wrong', msg: "❌ 最後一步加法算錯囉，請檢查個位數與進位。" },
-                    { text: `${a1 - totalGapValue}`, type: 'wrong', msg: "❌ 應該是將首項加上增加的數值。" }])
-            }
-        ];
+        
+        generateQuestion();
     }
 
-    function renderStep() {
-        const data = steps[currentStep];
-        document.getElementById('progress').innerText = `STEP ${currentStep + 1} / 5`;
-        document.getElementById('step-name').innerText = data.title;
-        document.getElementById('question').innerHTML = data.q;
-        document.getElementById('feedback').innerText = "";
-        document.getElementById('next-btn-area').style.display = "none";
-        const optDiv = document.getElementById('options-container');
-        optDiv.innerHTML = "";
-        data.options.forEach(opt => {
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) {
+            showResult();
+            return;
+        }
+
+        questionCount++;
+        document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
+        isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = isFirstTryQ4 = true;
+
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('step3').style.display = 'none';
+        document.getElementById('step4').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('options1').innerHTML = '';
+        document.getElementById('options2').innerHTML = '';
+        document.getElementById('options3').innerHTML = '';
+        document.getElementById('options4').innerHTML = '';
+        document.getElementById('q1-feedback').innerText = '';
+        document.getElementById('q2-feedback').innerText = '';
+        document.getElementById('q3-feedback').innerText = '';
+        document.getElementById('q4-feedback').innerText = '';
+
+        if (quizMode === 'findD') {
+            if (questionCount <= 5) {
+                if (Math.random() > 0.5) { 
+                    currentA1 = getRandomInt(1, 15);
+                    currentA2 = getRandomInt(currentA1 + 1, currentA1 + 10);
+                } else {
+                    currentA1 = getRandomInt(5, 20);
+                    currentA2 = getRandomInt(1, currentA1 - 1);
+                }
+            } else if (questionCount <= 8) {
+                if (Math.random() > 0.5) {
+                    currentA1 = getRandomInt(-15, -1);
+                    currentA2 = getRandomInt(1, 15);
+                } else {
+                    currentA1 = getRandomInt(1, 15);
+                    currentA2 = getRandomInt(-15, -1);
+                }
+            } else {
+                if (Math.random() > 0.5) {
+                    currentA1 = getRandomInt(-10, -1);
+                    currentA2 = getRandomInt(currentA1 - 10, currentA1 - 1);
+                } else {
+                    currentA1 = getRandomInt(-20, -5);
+                    currentA2 = getRandomInt(currentA1 + 1, -1);
+                }
+            }
+        } else {
+            currentN = getRandomInt(5, 20);
+            if (questionCount <= 4) { 
+                currentA1 = getRandomInt(1, 19);
+                currentD = getRandomInt(1, 10);
+            } else if (questionCount <= 7) { 
+                currentA1 = getRandomInt(-19, -1);
+                currentD = getRandomInt(-10, -1);
+            } else { 
+                if (Math.random() > 0.5) {
+                    currentA1 = getRandomInt(1, 19);
+                    currentD = getRandomInt(-10, -1);
+                } else {
+                    currentA1 = getRandomInt(-19, -1);
+                    currentD = getRandomInt(1, 10);
+                }
+            }
+            currentA2 = currentA1 + currentD;
+        }
+        
+        currentD = currentA2 - currentA1;
+        const a3 = currentA2 + currentD;
+
+        if (quizMode === 'findD') {
+            document.getElementById('question-box').innerHTML = `$$ ${currentA1}, ${currentA2}, ${a3}, \\dots $$`;
+            const s1_correct = `${currentA2} - ${formatNum(currentA1)}`;
+            let s1_choices = [
+                s1_correct,
+                `${currentA1} - ${formatNum(currentA2)}`,
+                `${currentA2} + ${formatNum(currentA1)}`,
+                `${currentA1} + ${formatNum(currentA2)}`
+            ];
+            renderStep1(s1_choices, s1_correct);
+        } else {
+            document.getElementById('question-box').innerHTML = `$$ ${currentA1}, ${currentA2}, ${a3}, \\dots, \\text{求 } a_{${currentN}} $$`;
+            let choices = [currentD, -currentD, currentA2 + currentA1, currentA2 + 1];
+            let uniqueChoices = Array.from(new Set(choices));
+            while (uniqueChoices.length < 4) {
+                uniqueChoices.push(uniqueChoices[uniqueChoices.length - 1] + 1);
+            }
+            renderStep1(uniqueChoices, currentD);
+        }
+        MathJax.typesetPromise();
+    }
+
+    function renderStep1(choices, correctValue) {
+        const container = document.getElementById('options1');
+        const feedback = document.getElementById('q1-feedback');
+        choices.sort(() => Math.random() - 0.5).forEach(val => {
             const btn = document.createElement('button');
-            btn.className = 'option-btn'; btn.innerHTML = opt.text;
+            btn.className = 'btn';
+            btn.innerHTML = `$${val}$`;
             btn.onclick = () => {
-                if(opt.type === 'correct') {
+                if (val === correctValue) {
                     btn.classList.add('correct');
-                    document.getElementById('feedback').innerHTML = `<span style='color:var(--success)'>${opt.msg}</span>`;
-                    optDiv.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
-                    if (conclusions.length <= currentStep) conclusions.push(data.summary);
-                    updateSummary(); document.getElementById('next-btn-area').style.display = "block";
+                    if (isFirstTryQ1) {
+                        totalScore += (quizMode === 'findD' ? 5 : 2);
+                    }
+                    feedback.innerText = '';
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    
+                    if (quizMode === 'findD') {
+                        document.getElementById('step2-hint').innerHTML = `Q2. 承上題，$d = ${val} = ?$`;
+                        document.getElementById('step2').style.display = 'block';
+                        setupStep2Options();
+                    } else {
+                        document.getElementById('step2-hint').innerHTML = `Q2. $a_1$ 與 $a_{${currentN}}$ 差了幾個公差？`;
+                        document.getElementById('step2').style.display = 'block';
+                        setupStep2Options();
+                    }
+                    MathJax.typesetPromise();
                 } else {
                     btn.classList.add('wrong');
-                    document.getElementById('feedback').innerHTML = `<span style='color:var(--error)'>${opt.msg}</span>`;
+                    isFirstTryQ1 = false;
+                    feedback.innerHTML = '提示：$d = a_2 - a_1$';
+                    MathJax.typesetPromise();
                 }
             };
-            optDiv.appendChild(btn);
+            container.appendChild(btn);
         });
-        if (window.MathJax) MathJax.typesetPromise();
     }
 
-    function updateSummary() {
-        const list = document.getElementById('summary-list');
-        if(!list) return;
-        document.getElementById('summary-box').style.display = "block";
-        list.innerHTML = conclusions.map(c => `<div class="summary-item">${c}</div>`).join('');
-        if (window.MathJax) MathJax.typesetPromise();
+    function setupStep2Options() {
+        const container = document.getElementById('options2');
+        const feedback = document.getElementById('q2-feedback');
+        container.innerHTML = '';
+        
+        if (quizMode === 'findD') {
+            let choices = [currentA2 + currentA1, currentA2 - currentA1, -currentA2 + currentA1, -currentA2 - currentA1];
+            let uniqueChoices = Array.from(new Set(choices));
+            while (uniqueChoices.length < 4) {
+                let last = uniqueChoices[uniqueChoices.length - 1];
+                uniqueChoices.push(last + (Math.floor(Math.random() * 5) + 1));
+            }
+            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerHTML = `$${val}$`;
+                btn.onclick = () => {
+                    if (val === currentD) {
+                        btn.classList.add('correct');
+                        if (isFirstTryQ2) totalScore += 5;
+                        feedback.innerText = '';
+                        container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                        document.getElementById('next-btn').style.display = 'block';
+                    } else {
+                        btn.classList.add('wrong');
+                        isFirstTryQ2 = false;
+                        feedback.innerText = '計算錯誤，請再試一次。';
+                    }
+                };
+                container.appendChild(btn);
+            });
+        } else {
+            let correctGap = currentN - 1;
+            let choices = [currentN + 1, currentN, currentN - 1, currentN - 2];
+            let uniqueChoices = Array.from(new Set(choices));
+            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerHTML = `${val} 個`;
+                btn.onclick = () => {
+                    if (val === correctGap) {
+                        btn.classList.add('correct');
+                        if (isFirstTryQ2) totalScore += 2;
+                        feedback.innerText = '';
+                        container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                        document.getElementById('step3-hint').innerHTML = `Q3. $a_1$ 與 $a_{${currentN}}$ 相差多少？`;
+                        document.getElementById('step3').style.display = 'block';
+                        setupStep3Options();
+                        MathJax.typesetPromise();
+                    } else {
+                        btn.classList.add('wrong');
+                        isFirstTryQ2 = false;
+                        feedback.innerHTML = '提示：$a_n$ 與 $a_1$ 相隔 $n-1$ 個公差';
+                        MathJax.typesetPromise();
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
     }
-    function goToNextStep() { if (++currentStep < 5) renderStep(); else showFinal(); }
 
-    function showFinal() {
-        const quizSection = document.getElementById('quiz-section');
-        const finalFormula = `${quizData.a1} + ${mathFmt(quizData.totalGapValue)} = ${quizData.result}`;
-        quizSection.innerHTML = `
-            <div style="text-align:center;">
-                <h2 style="color:var(--success)">🎯 挑戰完成！</h2>
-                <div class="origin-q">回顧題目：等差數列 ${quizData.a1}, ${quizData.a2}, ${quizData.a3}, …… 求第 ${quizData.targetN} 項？</div>
-                <div style="text-align:left; background:#fdfdfd; padding:20px; border-radius:12px; border:1px solid #ddd; margin-bottom: 20px;">
-                    <p style="color:var(--primary); font-weight:bold;">解題步驟回顧：</p>
-                    <p>1. 算出公差 \\(d = ${quizData.d}\\)</p>
-                    <p>2. 算出增加次數 = ${quizData.targetN - 1} 次</p>
-                    <p>3. 算出總增加值 = ${quizData.totalGapValue}</p>
-                    <p>4. 最後結果：\\(${finalFormula}\\)</p>
-                </div>
-                <button class="btn-retry" onclick="startQuiz(currentLevel)">再練一題</button>
-                <button class="btn-home" onclick="location.reload()">回首頁</button>
-            </div>`;
-        if (window.MathJax) MathJax.typesetPromise();
+    function setupStep3Options() {
+        const container = document.getElementById('options3');
+        const feedback = document.getElementById('q3-feedback');
+        const correctDiff = (currentN - 1) * currentD;
+        let choices = [correctDiff, correctDiff + currentD, correctDiff - currentD, -correctDiff];
+        let uniqueChoices = Array.from(new Set(choices));
+        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerHTML = `$${val}$`;
+            btn.onclick = () => {
+                if (val === correctDiff) {
+                    btn.classList.add('correct');
+                    if (isFirstTryQ3) totalScore += 3;
+                    feedback.innerText = '';
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step4-hint').innerHTML = `Q4. 最後，$a_{${currentN}} = ?$`;
+                    document.getElementById('step4').style.display = 'block';
+                    setupStep4Options();
+                    MathJax.typesetPromise();
+                } else {
+                    btn.classList.add('wrong');
+                    isFirstTryQ3 = false;
+                    feedback.innerHTML = '提示：請計算 $(n-1) \\times d$ 的結果';
+                    MathJax.typesetPromise();
+                }
+            };
+            container.appendChild(btn);
+        });
     }
+
+    function setupStep4Options() {
+        const container = document.getElementById('options4');
+        const feedback = document.getElementById('q4-feedback');
+        const finalAn = currentA1 + (currentN - 1) * currentD;
+        let choices = [finalAn, finalAn + currentD, finalAn - currentD, -finalAn];
+        let uniqueChoices = Array.from(new Set(choices));
+        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerHTML = `$${val}$`;
+            btn.onclick = () => {
+                if (val === finalAn) {
+                    btn.classList.add('correct');
+                    if (isFirstTryQ4) totalScore += 3;
+                    feedback.innerText = '';
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                } else {
+                    btn.classList.add('wrong');
+                    isFirstTryQ4 = false;
+                    feedback.innerHTML = '提示：$a_n = a_1 + (n-1) \\times d$';
+                    MathJax.typesetPromise();
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function showResult() {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = totalScore + " 分";
+    }
+
+    function resetQuiz() {
+        questionCount = 0;
+        totalScore = 0;
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    window.onload = function() {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 128,
+            height: 128
+        });
+    };
 </script>
+
 </body>
 </html>
