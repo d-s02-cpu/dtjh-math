@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>苗栗大同國中資源中心 - 等差數列練習</title>
+    <title>苗栗大同國中資源中心 - 互動練習</title>
     <script>
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -18,7 +18,7 @@
     <style>
         :root {
             --primary-color: #4a90e2;
-            --secondary-color: #4caf50; /* 模式二底色 */
+            --secondary-color: #4caf50; 
             --success-color: #4caf50;
             --error-color: #f44336;
             --bg-color: #f5f7fa;
@@ -88,14 +88,13 @@
 
 <div class="container" id="start-screen">
     <h2>苗栗大同國中資源中心</h2>
-    <h3>等差數列循序練習</h3>
-    <div class="desc-text">
-        請選擇練習題型：<br>
-        難度隨題號增加：純正數 $\rightarrow$ 純負數 $\rightarrow$ 異號。
+    <h3 id="quiz-title">新題型練習</h3>
+    <div class="desc-text" id="quiz-desc">
+        請選擇練習模式：
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('findD')">模式一：求公差 $d$</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('findAn')">模式二：求第 $n$ 項 $a_n$</button>
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二</button>
     </div>
     
     <div id="qrcode-container">
@@ -110,11 +109,11 @@
         <span id="mode-badge" class="mode-badge">練習模式</span>
     </div>
 
-    <div class="question-text" id="mode-text">等差數列 $a_1, a_2, a_3, \dots$，求公差 $d$：</div>
+    <div class="question-text" id="mode-text">題目說明載入中...</div>
     <div id="question-box"></div>
 
     <div id="step1" class="step-container" style="display: block;">
-        <span class="step-title" id="step1-title">Q1. 哪一個算式可以算出公差 $d$？</span>
+        <span class="step-title" id="step1-title">Q1. 第一步</span>
         <div id="q1-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options1"></div>
     </div>
@@ -148,11 +147,7 @@
 </div>
 
 <script>
-    let quizMode = 'findD';
-    let currentD = 0;
-    let currentA1 = 0;
-    let currentA2 = 0;
-    let currentN = 0;
+    let quizMode = '';
     let questionCount = 0;
     let totalScore = 0;
     let isFirstTryQ1 = true; 
@@ -160,6 +155,7 @@
     let isFirstTryQ3 = true;
     let isFirstTryQ4 = true;
 
+    // 保留數字格式化輔助函數
     function formatNum(num, isLeading = false) {
         if (num < 0 && !isLeading) return `(${num})`;
         return num.toString();
@@ -170,16 +166,7 @@
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
         
-        if (quizMode === 'findD') {
-            document.getElementById('mode-badge').innerText = '目前模式：求公差 d';
-            document.getElementById('mode-text').innerText = '等差數列 $a_1, a_2, a_3, \\dots$，求公差 $d$：';
-            document.getElementById('step1-title').innerText = 'Q1. 哪一個算式可以算出公差 $d$？';
-        } else {
-            document.getElementById('mode-badge').innerText = '目前模式：求第 n 項';
-            document.getElementById('mode-text').innerText = '等差數列 $a_1, a_2, a_3, \\dots$，求指定的 $a_n$：';
-            document.getElementById('step1-title').innerText = 'Q1. 公差 $d = ?$';
-        }
-        
+        // 模式切換邏輯待填入
         generateQuestion();
     }
 
@@ -195,246 +182,23 @@
 
         questionCount++;
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
-        isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = isFirstTryQ4 = true;
+        
+        // 重設狀態
+        resetStepUI();
 
+        // 題目生成邏輯待填入
+    }
+
+    function resetStepUI() {
+        isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = isFirstTryQ4 = true;
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step3').style.display = 'none';
         document.getElementById('step4').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('options1').innerHTML = '';
-        document.getElementById('options2').innerHTML = '';
-        document.getElementById('options3').innerHTML = '';
-        document.getElementById('options4').innerHTML = '';
-        document.getElementById('q1-feedback').innerText = '';
-        document.getElementById('q2-feedback').innerText = '';
-        document.getElementById('q3-feedback').innerText = '';
-        document.getElementById('q4-feedback').innerText = '';
-
-        if (quizMode === 'findD') {
-            if (questionCount <= 5) {
-                if (Math.random() > 0.5) { 
-                    currentA1 = getRandomInt(1, 15);
-                    currentA2 = getRandomInt(currentA1 + 1, currentA1 + 10);
-                } else {
-                    currentA1 = getRandomInt(5, 20);
-                    currentA2 = getRandomInt(1, currentA1 - 1);
-                }
-            } else if (questionCount <= 8) {
-                if (Math.random() > 0.5) {
-                    currentA1 = getRandomInt(-15, -1);
-                    currentA2 = getRandomInt(1, 15);
-                } else {
-                    currentA1 = getRandomInt(1, 15);
-                    currentA2 = getRandomInt(-15, -1);
-                }
-            } else {
-                if (Math.random() > 0.5) {
-                    currentA1 = getRandomInt(-10, -1);
-                    currentA2 = getRandomInt(currentA1 - 10, currentA1 - 1);
-                } else {
-                    currentA1 = getRandomInt(-20, -5);
-                    currentA2 = getRandomInt(currentA1 + 1, -1);
-                }
-            }
-        } else {
-            currentN = getRandomInt(5, 20);
-            if (questionCount <= 4) { 
-                currentA1 = getRandomInt(1, 19);
-                currentD = getRandomInt(1, 10);
-            } else if (questionCount <= 7) { 
-                currentA1 = getRandomInt(-19, -1);
-                currentD = getRandomInt(-10, -1);
-            } else { 
-                if (Math.random() > 0.5) {
-                    currentA1 = getRandomInt(1, 19);
-                    currentD = getRandomInt(-10, -1);
-                } else {
-                    currentA1 = getRandomInt(-19, -1);
-                    currentD = getRandomInt(1, 10);
-                }
-            }
-            currentA2 = currentA1 + currentD;
-        }
         
-        currentD = currentA2 - currentA1;
-        const a3 = currentA2 + currentD;
-
-        if (quizMode === 'findD') {
-            document.getElementById('question-box').innerHTML = `$$ ${currentA1}, ${currentA2}, ${a3}, \\dots $$`;
-            const s1_correct = `${currentA2} - ${formatNum(currentA1)}`;
-            let s1_choices = [
-                s1_correct,
-                `${currentA1} - ${formatNum(currentA2)}`,
-                `${currentA2} + ${formatNum(currentA1)}`,
-                `${currentA1} + ${formatNum(currentA2)}`
-            ];
-            renderStep1(s1_choices, s1_correct);
-        } else {
-            document.getElementById('question-box').innerHTML = `$$ ${currentA1}, ${currentA2}, ${a3}, \\dots, \\text{求 } a_{${currentN}} $$`;
-            let choices = [currentD, -currentD, currentA2 + currentA1, currentA2 + 1];
-            let uniqueChoices = Array.from(new Set(choices));
-            while (uniqueChoices.length < 4) {
-                uniqueChoices.push(uniqueChoices[uniqueChoices.length - 1] + 1);
-            }
-            renderStep1(uniqueChoices, currentD);
-        }
-        MathJax.typesetPromise();
-    }
-
-    function renderStep1(choices, correctValue) {
-        const container = document.getElementById('options1');
-        const feedback = document.getElementById('q1-feedback');
-        choices.sort(() => Math.random() - 0.5).forEach(val => {
-            const btn = document.createElement('button');
-            btn.className = 'btn';
-            btn.innerHTML = `$${val}$`;
-            btn.onclick = () => {
-                if (val === correctValue) {
-                    btn.classList.add('correct');
-                    if (isFirstTryQ1) {
-                        totalScore += (quizMode === 'findD' ? 5 : 2);
-                    }
-                    feedback.innerText = '';
-                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                    
-                    if (quizMode === 'findD') {
-                        document.getElementById('step2-hint').innerHTML = `Q2. 承上題，$d = ${val} = ?$`;
-                        document.getElementById('step2').style.display = 'block';
-                        setupStep2Options();
-                    } else {
-                        document.getElementById('step2-hint').innerHTML = `Q2. $a_1$ 與 $a_{${currentN}}$ 差了幾個公差？`;
-                        document.getElementById('step2').style.display = 'block';
-                        setupStep2Options();
-                    }
-                    MathJax.typesetPromise();
-                } else {
-                    btn.classList.add('wrong');
-                    isFirstTryQ1 = false;
-                    feedback.innerHTML = '提示：$d = a_2 - a_1$';
-                    MathJax.typesetPromise();
-                }
-            };
-            container.appendChild(btn);
-        });
-    }
-
-    function setupStep2Options() {
-        const container = document.getElementById('options2');
-        const feedback = document.getElementById('q2-feedback');
-        container.innerHTML = '';
-        
-        if (quizMode === 'findD') {
-            let choices = [currentA2 + currentA1, currentA2 - currentA1, -currentA2 + currentA1, -currentA2 - currentA1];
-            let uniqueChoices = Array.from(new Set(choices));
-            while (uniqueChoices.length < 4) {
-                let last = uniqueChoices[uniqueChoices.length - 1];
-                uniqueChoices.push(last + (Math.floor(Math.random() * 5) + 1));
-            }
-            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
-                const btn = document.createElement('button');
-                btn.className = 'btn';
-                btn.innerHTML = `$${val}$`;
-                btn.onclick = () => {
-                    if (val === currentD) {
-                        btn.classList.add('correct');
-                        if (isFirstTryQ2) totalScore += 5;
-                        feedback.innerText = '';
-                        container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                        document.getElementById('next-btn').style.display = 'block';
-                    } else {
-                        btn.classList.add('wrong');
-                        isFirstTryQ2 = false;
-                        feedback.innerText = '計算錯誤，請再試一次。';
-                    }
-                };
-                container.appendChild(btn);
-            });
-        } else {
-            let correctGap = currentN - 1;
-            let choices = [currentN + 1, currentN, currentN - 1, currentN - 2];
-            let uniqueChoices = Array.from(new Set(choices));
-            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
-                const btn = document.createElement('button');
-                btn.className = 'btn';
-                btn.innerHTML = `${val} 個`;
-                btn.onclick = () => {
-                    if (val === correctGap) {
-                        btn.classList.add('correct');
-                        if (isFirstTryQ2) totalScore += 2;
-                        feedback.innerText = '';
-                        container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                        document.getElementById('step3-hint').innerHTML = `Q3. $a_1$ 與 $a_{${currentN}}$ 相差多少？`;
-                        document.getElementById('step3').style.display = 'block';
-                        setupStep3Options();
-                        MathJax.typesetPromise();
-                    } else {
-                        btn.classList.add('wrong');
-                        isFirstTryQ2 = false;
-                        feedback.innerHTML = '提示：$a_n$ 與 $a_1$ 相隔 $n-1$ 個公差';
-                        MathJax.typesetPromise();
-                    }
-                };
-                container.appendChild(btn);
-            });
-        }
-    }
-
-    function setupStep3Options() {
-        const container = document.getElementById('options3');
-        const feedback = document.getElementById('q3-feedback');
-        const correctDiff = (currentN - 1) * currentD;
-        let choices = [correctDiff, correctDiff + currentD, correctDiff - currentD, -correctDiff];
-        let uniqueChoices = Array.from(new Set(choices));
-        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
-            const btn = document.createElement('button');
-            btn.className = 'btn';
-            btn.innerHTML = `$${val}$`;
-            btn.onclick = () => {
-                if (val === correctDiff) {
-                    btn.classList.add('correct');
-                    if (isFirstTryQ3) totalScore += 3;
-                    feedback.innerText = '';
-                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                    document.getElementById('step4-hint').innerHTML = `Q4. 最後，$a_{${currentN}} = ?$`;
-                    document.getElementById('step4').style.display = 'block';
-                    setupStep4Options();
-                    MathJax.typesetPromise();
-                } else {
-                    btn.classList.add('wrong');
-                    isFirstTryQ3 = false;
-                    feedback.innerHTML = '提示：請計算 $(n-1) \\times d$ 的結果';
-                    MathJax.typesetPromise();
-                }
-            };
-            container.appendChild(btn);
-        });
-    }
-
-    function setupStep4Options() {
-        const container = document.getElementById('options4');
-        const feedback = document.getElementById('q4-feedback');
-        const finalAn = currentA1 + (currentN - 1) * currentD;
-        let choices = [finalAn, finalAn + currentD, finalAn - currentD, -finalAn];
-        let uniqueChoices = Array.from(new Set(choices));
-        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
-            const btn = document.createElement('button');
-            btn.className = 'btn';
-            btn.innerHTML = `$${val}$`;
-            btn.onclick = () => {
-                if (val === finalAn) {
-                    btn.classList.add('correct');
-                    if (isFirstTryQ4) totalScore += 3;
-                    feedback.innerText = '';
-                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                    document.getElementById('next-btn').style.display = 'block';
-                } else {
-                    btn.classList.add('wrong');
-                    isFirstTryQ4 = false;
-                    feedback.innerHTML = '提示：$a_n = a_1 + (n-1) \\times d$';
-                    MathJax.typesetPromise();
-                }
-            };
-            container.appendChild(btn);
+        ['1','2','3','4'].forEach(num => {
+            document.getElementById(`options${num}`).innerHTML = '';
+            document.getElementById(`q${num}-feedback`).innerText = '';
         });
     }
 
