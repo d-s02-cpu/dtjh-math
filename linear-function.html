@@ -210,15 +210,15 @@
         let bAbs = Math.abs(currentQ.b);
         let correct = `${currentQ.a} \\times ${formatNum(currentQ.x)} ${bSign} ${bAbs}`;
         
-        // 修正：干擾項設計，避免出現數值相同但順序相反的情況（如 -6 * 7）
-        let wrong1 = `${currentQ.a} + ${formatNum(currentQ.x)} ${bSign} ${bAbs}`; // 乘法變加法
-        let wrong2 = `${currentQ.a} \\times x ${bSign} ${bAbs}`; // 未代入 x
-        let wrong3 = `${currentQ.a} \\times ${formatNum(currentQ.x + getRandomInt(1,2))} ${bSign} ${bAbs}`; // 代錯數值
+        let wrong1 = `${currentQ.a} + ${formatNum(currentQ.x)} ${bSign} ${bAbs}`; 
+        let wrong2 = `${currentQ.a} \\times x ${bSign} ${bAbs}`; 
+        let wrong3 = `${currentQ.a} \\times ${formatNum(currentQ.x + getRandomInt(1,2))} ${bSign} ${bAbs}`; 
 
         let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
         while(options.length < 4) options.push(`${currentQ.a} \\times ${currentQ.x - 1} ${bSign} ${bAbs}`);
 
         renderOptions(1, options, correct, () => {
+            if(isFirstTryQ1) totalScore += 2; // 步驟分
             document.getElementById('step2').style.display = 'block';
             setupStep2();
         }, "", {wrong1: "運算符號錯誤", wrong2: "尚未代入數值", default: "代入過程有誤"});
@@ -226,14 +226,15 @@
 
     function setupStep2() {
         let correct = currentQ.am;
-        let wrong1 = -currentQ.am; // 正負號錯誤
-        let wrong2 = currentQ.a + currentQ.x; // 變成加法
-        let wrong3 = Math.abs(currentQ.a * currentQ.x) + 1; // 計算失誤
+        let wrong1 = -currentQ.am; 
+        let wrong2 = currentQ.a + currentQ.x; 
+        let wrong3 = Math.abs(currentQ.a * currentQ.x) + 1; 
 
         let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
         while(options.length < 4) options.push(correct + getRandomInt(1, 5));
 
         renderOptions(2, options, correct, () => {
+            if(isFirstTryQ2) totalScore += 2; // 步驟分
             document.getElementById('step3').style.display = 'block';
             setupStep3();
         }, `請問 $${currentQ.a} \\times ${formatNum(currentQ.x)}$ 的結果是？`, {wrong1: "請注意正負號", wrong2: "應使用乘法運算", default: "乘法計算有誤"});
@@ -241,15 +242,16 @@
 
     function setupStep3() {
         let correct = currentQ.y;
-        let wrong1 = currentQ.am - currentQ.b; // 符號弄反
-        let wrong2 = currentQ.am + currentQ.b + 1; // 算錯
-        let wrong3 = currentQ.am; // 忘記加常數項
+        let wrong1 = currentQ.am - currentQ.b; 
+        let wrong2 = currentQ.am + currentQ.b + 1; 
+        let wrong3 = currentQ.am; 
 
         let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
         while(options.length < 4) options.push(correct + getRandomInt(-3, 3));
 
         let opText = currentQ.b >= 0 ? '+' : '-';
         renderOptions(3, options, correct, () => {
+            if(isFirstTryQ3) totalScore += 2; // 步驟分
             document.getElementById('step4').style.display = 'block';
             setupStep4();
         }, `最後計算 $${currentQ.am} ${opText} ${Math.abs(currentQ.b)} = ?$`, {wrong1: "注意加減符號", wrong3: "尚未運算常數項", default: "最後計算有誤"});
@@ -257,16 +259,20 @@
 
     function setupStep4() {
         let correct = `(${currentQ.x}, ${currentQ.y})`;
-        let wrong1 = `(${currentQ.y}, ${currentQ.x})`; // x, y 顛倒
-        let wrong2 = `(${currentQ.a}, ${currentQ.b})`; // 誤用係數
-        let wrong3 = `(${currentQ.x}, 0)`; // 截距誤解
+        let wrong1 = `(${currentQ.y}, ${currentQ.x})`; 
+        let wrong2 = `(${currentQ.a}, ${currentQ.b})`; 
+        let wrong3 = `(${currentQ.x}, 0)`; 
 
         let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
         while(options.length < 4) options.push(`(x, y)`);
 
         renderOptions(4, options, correct, () => {
+            if(isFirstTryQ4) totalScore += 2; // 步驟分
+            
+            // 全對獎勵：若四個標記皆為 true，額外加 2 分
+            if(isFirstTryQ1 && isFirstTryQ2 && isFirstTryQ3 && isFirstTryQ4) totalScore += 2;
+            
             document.getElementById('next-btn').style.display = 'block';
-            if(isFirstTryQ1 && isFirstTryQ2 && isFirstTryQ3 && isFirstTryQ4) totalScore += 10;
         }, `此函數圖形會通過坐標平面上哪一點？`, {wrong1: "座標順序為 (x, y)", wrong2: "請使用 x 與函數值", default: "座標概念有誤"});
     }
 
