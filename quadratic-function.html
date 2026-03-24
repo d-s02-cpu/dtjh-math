@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心 - 二次函數練習</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #ff9800; 
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+            --step-bg: #fffbe6;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; text-align: center;
+        }
+        .question-text { font-size: 1.1rem; color: #555; margin-bottom: 0.5rem; text-align: left; }
+        #question-box {
+            font-size: 2rem; margin: 0.5rem 0 1.5rem 0; padding: 1.5rem;
+            background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
+            color: #333;
+            min-height: 3.5rem;
+        }
+        .step-container {
+            margin-top: 1rem; padding: 1rem; border-radius: 15px;
+            background: var(--step-bg); border: 1px dashed #ffe58f;
+            display: none; 
+        }
+        .step-title { font-weight: bold; margin-bottom: 10px; color: #856404; display: block; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:hover { background: #f0f7ff; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; align-items: center; }
+        .mode-badge { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #555; }
+        
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
+        
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        .desc-text { color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        #qrcode-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3 id="quiz-title">二次函數圖形特徵練習</h3>
+    <div class="desc-text" id="quiz-desc">
+        形式：$y = a(x - h)^2 + k$<br>
+        請選擇練習模式：
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：逐步引導</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：隨機挑戰</button>
+    </div>
+    
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+    </div>
+</div>
+
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 1 題 / 共 10 題</span>
+        <span id="mode-badge" class="mode-badge">練習模式</span>
+    </div>
+
+    <div class="question-text" id="mode-text">觀察下方二次函數：</div>
+    <div id="question-box"></div>
+
+    <div id="step1" class="step-container">
+        <span class="step-title" id="step1-title">Q1. 開口方向？</span>
+        <div id="q1-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options1"></div>
+    </div>
+
+    <div id="step2" class="step-container">
+        <span class="step-title" id="step2-hint">Q2. 對稱軸方程式？</span>
+        <div id="q2-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options2"></div>
+    </div>
+
+    <div id="step3" class="step-container">
+        <span class="step-title" id="step3-hint">Q3. 頂點座標？</span>
+        <div id="q3-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options3"></div>
+    </div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">0</div>
+    <p>測驗結束，再接再厲！</p>
+    <button class="btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
+<script>
+    let quizMode = '';
+    let questionCount = 0;
+    let totalScore = 0;
+    let currentData = {};
+    
+    let canScoreCurrentStep = true;
+    let hasFailedAnyStepInQuestion = false;
+
+    function startQuiz(mode) {
+        quizMode = mode;
+        questionCount = 0;
+        totalScore = 0;
+        document.getElementById('mode-badge').innerText = (mode === 'mode1' ? '逐步引導模式' : '隨機挑戰模式');
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        generateQuestion();
+    }
+
+    function getRandomInt(min, max) {
+        let res = Math.floor(Math.random() * (max - min + 1)) + min;
+        return res === 0 ? (Math.random() > 0.5 ? 1 : -1) : res;
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) {
+            showResult();
+            return;
+        }
+
+        questionCount++;
+        document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
+        resetStepUI();
+        
+        hasFailedAnyStepInQuestion = false;
+
+        const a = getRandomInt(-9, 9);
+        const h = Math.floor(Math.random() * 19) - 9;
+        const k = Math.floor(Math.random() * 19) - 9;
+
+        currentData = { a, h, k };
+
+        let aStr = a === 1 ? "" : (a === -1 ? "-" : a);
+        let hPart = h === 0 ? "x^2" : (h > 0 ? `(x - ${h})^2` : `(x + ${Math.abs(h)})^2`);
+        let kPart = k === 0 ? "" : (k > 0 ? ` + ${k}` : ` - ${Math.abs(k)}`);
+        
+        const formula = `y = ${aStr}${hPart}${kPart}`;
+        const qBox = document.getElementById('question-box');
+        qBox.innerHTML = `$$ ${formula} $$`;
+        
+        if (window.MathJax) {
+            MathJax.typesetPromise([qBox]);
+        }
+
+        if (quizMode === 'mode1') {
+            setupStep(1);
+        } else {
+            const randomStep = Math.floor(Math.random() * 3) + 1;
+            setupStep(randomStep);
+        }
+    }
+
+    function setupStep(stepNum) {
+        canScoreCurrentStep = true;
+        const stepDiv = document.getElementById(`step${stepNum}`);
+        const optionsDiv = document.getElementById(`options${stepNum}`);
+        
+        stepDiv.style.display = 'block';
+        optionsDiv.innerHTML = '';
+
+        let options = [];
+        let correctIdx = 0;
+        let correctAnswer = "";
+
+        if (stepNum === 1) {
+            correctAnswer = currentData.a > 0 ? "向上" : "向下";
+            options = ["向上", "向下", "向左", "向右"];
+            options = shuffleArray(options);
+            correctIdx = options.indexOf(correctAnswer);
+        } else if (stepNum === 2) {
+            const h = currentData.h;
+            correctAnswer = `$x = ${h}$`;
+            let rawOptions = [correctAnswer, `$x = ${-h}$`, `$y = ${h}$`, `$x = 0$`, `$y = 0$`, `$x = ${h+1}$`, `$x = ${h-1}$`];
+            options = [...new Set(rawOptions)].slice(0, 4);
+            options = shuffleArray(options);
+            correctIdx = options.indexOf(correctAnswer);
+        } else if (stepNum === 3) {
+            const { h, k } = currentData;
+            correctAnswer = `$(${h}, ${k})$`;
+            let rawOptions = [correctAnswer, `$(${-h}, ${k})$`, `$(${h}, ${-k})$`, `$(${k}, ${h})$`, `$(${-h}, ${-k})$`, `$(0, 0)$` ];
+            options = [...new Set(rawOptions)].slice(0, 4);
+            options = shuffleArray(options);
+            correctIdx = options.indexOf(correctAnswer);
+        }
+
+        options.forEach((opt, index) => {
+            const button = document.createElement('button');
+            button.className = 'btn';
+            button.innerHTML = opt; 
+            button.onclick = () => checkAnswer(stepNum, index, correctIdx);
+            optionsDiv.appendChild(button);
+        });
+
+        // 優化排版呼叫，放在下一幀處理以防阻塞
+        if (window.MathJax) {
+            requestAnimationFrame(() => {
+                MathJax.typesetPromise([optionsDiv]);
+            });
+        }
+    }
+
+    function checkAnswer(stepNum, selectedIdx, correctIdx) {
+        const optionsDiv = document.getElementById(`options${stepNum}`);
+        const buttons = optionsDiv.getElementsByTagName('button');
+        const feedback = document.getElementById(`q${stepNum}-feedback`);
+
+        if (selectedIdx === correctIdx) {
+            buttons[selectedIdx].classList.add('correct');
+            feedback.innerText = "正確！";
+            feedback.style.color = "var(--success-color)";
+            disableButtons(buttons);
+            
+            if (canScoreCurrentStep) {
+                if (quizMode === 'mode1') {
+                    totalScore += 3;
+                    if (stepNum === 3 && !hasFailedAnyStepInQuestion) {
+                        totalScore += 1;
+                    }
+                } else {
+                    totalScore += 10;
+                }
+            }
+
+            if (quizMode === 'mode1' && stepNum < 3) {
+                // 輕微縮短延遲並確保排版不卡頓
+                setTimeout(() => {
+                    requestAnimationFrame(() => setupStep(stepNum + 1));
+                }, 400);
+            } else {
+                document.getElementById('next-btn').style.display = 'block';
+            }
+        } else {
+            buttons[selectedIdx].classList.add('wrong');
+            buttons[selectedIdx].disabled = true;
+            feedback.innerText = "再試一次看！";
+            feedback.style.color = "var(--error-color)";
+            
+            canScoreCurrentStep = false;
+            hasFailedAnyStepInQuestion = true;
+        }
+    }
+
+    function disableButtons(buttons) {
+        for (let btn of buttons) {
+            btn.disabled = true;
+        }
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function resetStepUI() {
+        ['1','2','3'].forEach(num => {
+            document.getElementById(`step${num}`).style.display = 'none';
+            document.getElementById(`options${num}`).innerHTML = '';
+            document.getElementById(`q${num}-feedback`).innerText = '';
+        });
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function showResult() {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = Math.round(totalScore) + " 分";
+    }
+
+    function resetQuiz() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    window.onload = function() {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 128,
+            height: 128
+        });
+    };
+</script>
+
+</body>
+</html>
