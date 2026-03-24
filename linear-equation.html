@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心 - 解方程式練習</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4caf50; 
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+            --step-bg: #fffbe6;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; text-align: center;
+        }
+        .question-text { font-size: 1.1rem; color: #555; margin-bottom: 0.5rem; text-align: left; }
+        #question-box {
+            font-size: 1.8rem; margin: 0.5rem 0 1.5rem 0; padding: 1rem;
+            background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
+        }
+        .step-container {
+            margin-top: 1rem; padding: 1rem; border-radius: 15px;
+            background: var(--step-bg); border: 1px dashed #ffe58f;
+            display: none; 
+        }
+        .step-title { font-weight: bold; margin-bottom: 10px; color: #856404; display: block; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; align-items: center; }
+        .mode-badge { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #555; }
+        
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
+        
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        .desc-text { color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        #qrcode-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3 id="quiz-title">一元一次方程式練習</h3>
+    <div class="desc-text" id="quiz-desc">
+        請選擇練習模式：<br>
+        難度隨題號增加：全正數 $\rightarrow$ 全負數 $\rightarrow$ 異號。
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：$ax = b$ 型</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + bx = c$ 型</button>
+    </div>
+    
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+    </div>
+</div>
+
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 1 題 / 共 10 題</span>
+        <span id="mode-badge" class="mode-badge">練習模式</span>
+    </div>
+
+    <div class="question-text" id="mode-text">求方程式中的 $x$：</div>
+    <div id="question-box"></div>
+
+    <div id="step1" class="step-container" style="display: block;">
+        <span class="step-title" id="step1-title">Q1. 第一步</span>
+        <div id="q1-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options1"></div>
+    </div>
+
+    <div id="step2" class="step-container">
+        <span class="step-title" id="step2-hint"></span>
+        <div id="q2-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options2"></div>
+    </div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">0</div>
+    <p>滿分 100 分，測驗結束。</p>
+    <button class="btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
+<script>
+    let quizMode = '';
+    let questionCount = 0;
+    let totalScore = 0;
+    let isFirstTryQ1 = true; 
+    let isFirstTryQ2 = true;
+
+    let currentA = 0;
+    let currentB = 0;
+    let currentX = ""; // 存放答案的字串
+    let currentC = 0;
+
+    function getGCD(a, b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b) {
+            a %= b;
+            [a, b] = [b, a];
+        }
+        return a;
+    }
+
+    function simplifyFrac(num, den) {
+        if (num === 0) return "0";
+        if (den === 0) return "1"; 
+        let sign = (num * den < 0) ? "-" : "";
+        num = Math.abs(num);
+        den = Math.abs(den);
+        let common = getGCD(num, den);
+        num /= common;
+        den /= common;
+        if (den === 1) return sign + num;
+        return `${sign}\\frac{${num}}{${den}}`;
+    }
+
+    function formatCoefficient(n) {
+        if (n === 1) return "";
+        if (n === -1) return "-";
+        return n.toString();
+    }
+
+    function formatNum(num, isLeading = false) {
+        if (num < 0 && !isLeading) return `(${num})`;
+        return num.toString();
+    }
+
+    function startQuiz(mode) {
+        quizMode = mode;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        
+        if (quizMode === 'mode1') {
+            document.getElementById('mode-badge').innerText = '目前模式：ax = b';
+            document.getElementById('step1-title').innerText = 'Q1. 方程式的解 $x = ?$';
+        } else {
+            document.getElementById('mode-badge').innerText = '目前模式：ax + bx = c';
+            document.getElementById('step1-title').innerText = 'Q1. 同類項合併後，方程式會變成？';
+        }
+        
+        generateQuestion();
+    }
+
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) {
+            showResult();
+            return;
+        }
+
+        questionCount++;
+        document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
+        
+        resetStepUI();
+
+        if (quizMode === 'mode1') {
+            let a, b, x_ans;
+            if (questionCount >= 6) {
+                // 第6-10題：x 為有理數，a, b 互質
+                let a_pool = [-10,-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9,10];
+                a = a_pool[Math.floor(Math.random() * a_pool.length)];
+                do {
+                    b = getRandomInt(-15, 15);
+                } while (b === 0 || getGCD(a, b) !== 1 || Math.abs(b/a) === 1);
+                x_ans = simplifyFrac(b, a);
+            } else {
+                // 第1-5題：x 為整數
+                let a_pool = [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,2,3,4,5,6,7,8,9,10];
+                a = a_pool[Math.floor(Math.random() * a_pool.length)];
+                let tempX = getRandomInt(-10, 10);
+                b = a * tempX;
+                x_ans = tempX.toString();
+            }
+            
+            currentA = a;
+            currentB = b;
+            currentX = x_ans; 
+
+            let displayA = formatCoefficient(currentA);
+            document.getElementById('question-box').innerHTML = `$$ ${displayA}x = ${currentB} $$`;
+            setupOptionsMode1();
+        } else {
+            let a, b, x;
+            if (questionCount <= 3) { 
+                a = getRandomInt(1, 10);
+                b = getRandomInt(1, 10);
+            } else if (questionCount <= 6) { 
+                a = getRandomInt(-10, -1);
+                b = getRandomInt(-10, -1);
+            } else { 
+                a = getRandomInt(1, 10);
+                b = getRandomInt(-10, -1);
+                if (Math.random() > 0.5) [a, b] = [b, a];
+                if (a + b === 0) b += 1;
+            }
+            x = getRandomInt(-10, 10);
+            currentA = a;
+            currentB = b;
+            currentX = x.toString(); 
+            currentC = (a + b) * x;
+
+            let displayA = formatCoefficient(currentA);
+            let bSign = currentB > 0 ? "+" : "-";
+            let bCoeff = formatCoefficient(Math.abs(currentB));
+            let bStr = `${bSign} ${bCoeff}x`;
+            
+            document.getElementById('question-box').innerHTML = `$$ ${displayA}x ${bStr} = ${currentC} $$`;
+            setupStep1Mode2();
+        }
+        MathJax.typesetPromise();
+    }
+
+    function setupOptionsMode1() {
+        const container = document.getElementById('options1');
+        const feedback = document.getElementById('q1-feedback');
+        let correct = currentX;
+        let choices = new Set([correct]);
+
+        // 錯誤選項
+        choices.add(simplifyFrac(currentA, currentB));
+        choices.add(simplifyFrac(-currentB, currentA));
+        if (choices.size < 4) choices.add(simplifyFrac(currentB + 1, currentA));
+        while (choices.size < 4) choices.add(getRandomInt(-12, 12).toString());
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ1) totalScore += 10;
+                document.getElementById('next-btn').style.display = 'block';
+                feedback.innerText = '';
+            } else {
+                isFirstTryQ1 = false;
+                feedback.innerHTML = `提示：運用等量公理，將等號兩邊同時除以 $${currentA}$。`;
+                MathJax.typesetPromise();
+            }
+        });
+    }
+
+    function setupStep1Mode2() {
+        const container = document.getElementById('options1');
+        const feedback = document.getElementById('q1-feedback');
+        let combinedA = currentA + currentB;
+        let correct = `${formatCoefficient(combinedA)}x = ${currentC}`;
+        
+        let choices = new Set([correct]);
+        choices.add(`${formatCoefficient(currentA - currentB)}x = ${currentC}`);
+        choices.add(`${formatCoefficient(Math.abs(combinedA))}x = ${currentC}`);
+        choices.add(`${combinedA} = ${currentC}x`);
+        
+        while (choices.size < 4) choices.add(`${formatCoefficient(getRandomInt(-20, 20))}x = ${currentC}`);
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ1) totalScore += 5;
+                feedback.innerText = '';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('step2-hint').innerHTML = `Q2. 方程式的解 $x = ?$`;
+                setupStep2Mode2();
+                MathJax.typesetPromise();
+            } else {
+                isFirstTryQ1 = false;
+                feedback.innerHTML = `提示：$${currentA} + ${formatNum(currentB)}$ 等於多少呢？`;
+                MathJax.typesetPromise();
+            }
+        });
+    }
+
+    function setupStep2Mode2() {
+        const container = document.getElementById('options2');
+        const feedback = document.getElementById('q2-feedback');
+        let correct = currentX;
+        let choices = new Set([correct, (parseInt(currentX)+1).toString(), (parseInt(currentX)*-1).toString(), "0"]);
+        while (choices.size < 4) choices.add(getRandomInt(-10, 10).toString());
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ2) totalScore += 5;
+                feedback.innerText = '';
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                isFirstTryQ2 = false;
+                feedback.innerText = '計算錯誤，請再試一次。';
+            }
+        });
+    }
+
+    function renderButtons(container, choices, correctValue, callback) {
+        container.innerHTML = '';
+        choices.sort(() => Math.random() - 0.5).forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerHTML = `$${val}$`;
+            btn.onclick = () => {
+                if (val === correctValue) {
+                    btn.classList.add('correct');
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    callback(true);
+                } else {
+                    btn.classList.add('wrong');
+                    callback(false);
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function resetStepUI() {
+        isFirstTryQ1 = isFirstTryQ2 = true;
+        document.getElementById('step2').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+        ['1','2'].forEach(num => {
+            document.getElementById(`options${num}`).innerHTML = '';
+            document.getElementById(`q${num}-feedback`).innerText = '';
+        });
+    }
+
+    function showResult() {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = totalScore + " 分";
+    }
+
+    function resetQuiz() {
+        questionCount = 0;
+        totalScore = 0;
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    window.onload = function() {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 128,
+            height: 128
+        });
+    };
+</script>
+
+</body>
+</html>
