@@ -18,7 +18,7 @@
     <style>
         :root {
             --primary-color: #4a90e2;
-            --secondary-color: #4caf50; /* 模式二底色 */
+            --secondary-color: #4caf50; 
             --success-color: #4caf50;
             --error-color: #f44336;
             --bg-color: #f5f7fa;
@@ -268,15 +268,19 @@
                 `${currentA2} + ${formatNum(currentA1)}`,
                 `${currentA1} + ${formatNum(currentA2)}`
             ];
-            renderStep1(s1_choices, s1_correct);
+            let uniqueS1 = Array.from(new Set(s1_choices));
+            while(uniqueS1.length < 4) uniqueS1.push(`算式${uniqueS1.length}`); 
+            renderStep1(uniqueS1, s1_correct);
         } else {
             document.getElementById('question-box').innerHTML = `$$ ${currentA1}, ${currentA2}, ${a3}, \\dots, \\text{求 } a_{${currentN}} $$`;
-            let choices = [currentD, -currentD, currentA2 + currentA1, currentA2 + 1];
-            let uniqueChoices = Array.from(new Set(choices));
-            while (uniqueChoices.length < 4) {
-                uniqueChoices.push(uniqueChoices[uniqueChoices.length - 1] + 1);
+            let choiceSet = new Set([currentD]);
+            let fallbacks = [currentA2 + currentA1, currentA1 - currentA2, -(currentA1 + currentA2)];
+            fallbacks.forEach(v => { if(choiceSet.size < 4) choiceSet.add(v); });
+            while(choiceSet.size < 4) {
+                let offset = getRandomInt(-5, 5);
+                if(offset !== 0) choiceSet.add(currentD + offset);
             }
-            renderStep1(uniqueChoices, currentD);
+            renderStep1(Array.from(choiceSet), currentD);
         }
         MathJax.typesetPromise();
     }
@@ -324,13 +328,13 @@
         container.innerHTML = '';
         
         if (quizMode === 'findD') {
-            let choices = [currentA2 + currentA1, currentA2 - currentA1, -currentA2 + currentA1, -currentA2 - currentA1];
-            let uniqueChoices = Array.from(new Set(choices));
-            while (uniqueChoices.length < 4) {
-                let last = uniqueChoices[uniqueChoices.length - 1];
-                uniqueChoices.push(last + (Math.floor(Math.random() * 5) + 1));
+            let choiceSet = new Set([currentD]);
+            let fallbacks = [currentA2 + currentA1, currentA1 - currentA2, -(currentA1 + currentA2)];
+            fallbacks.forEach(v => { if(choiceSet.size < 4) choiceSet.add(v); });
+            while (choiceSet.size < 4) {
+                choiceSet.add(currentD + getRandomInt(-5, 5));
             }
-            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+            Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
                 btn.innerHTML = `$${val}$`;
@@ -351,9 +355,11 @@
             });
         } else {
             let correctGap = currentN - 1;
-            let choices = [currentN + 1, currentN, currentN - 1, currentN - 2];
-            let uniqueChoices = Array.from(new Set(choices));
-            uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+            let choiceSet = new Set([correctGap]);
+            let fallbacks = [currentN, currentN + 1, currentN - 2];
+            fallbacks.forEach(v => { if(v > 0 && choiceSet.size < 4) choiceSet.add(v); });
+            while(choiceSet.size < 4) choiceSet.add(getRandomInt(2, 30));
+            Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
                 btn.innerHTML = `${val} 個`;
@@ -382,10 +388,36 @@
     function setupStep3Options() {
         const container = document.getElementById('options3');
         const feedback = document.getElementById('q3-feedback');
+        container.innerHTML = '';
         const correctDiff = (currentN - 1) * currentD;
-        let choices = [correctDiff, correctDiff + currentD, correctDiff - currentD, -correctDiff];
-        let uniqueChoices = Array.from(new Set(choices));
-        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+        
+        // 核心邏輯：確保兩正兩負，且個位數相同
+        let targetUnit = Math.abs(correctDiff % 10);
+        let positiveChoices = [];
+        let negativeChoices = [];
+        
+        if (correctDiff >= 0) positiveChoices.push(correctDiff);
+        else negativeChoices.push(correctDiff);
+        
+        let offsetMultiplier = 1;
+        while (positiveChoices.length < 2 || negativeChoices.length < 2) {
+            let base = offsetMultiplier * 10;
+            let val1 = base + targetUnit;  
+            let val2 = -(base + targetUnit); 
+            
+            if (positiveChoices.length < 2 && !positiveChoices.includes(val1) && val1 !== correctDiff) {
+                positiveChoices.push(val1);
+            }
+            if (negativeChoices.length < 2 && !negativeChoices.includes(val2) && val2 !== correctDiff) {
+                negativeChoices.push(val2);
+            }
+            offsetMultiplier++;
+            if (offsetMultiplier > 100) break;
+        }
+
+        let finalChoices = [...positiveChoices, ...negativeChoices];
+
+        finalChoices.sort(() => Math.random() - 0.5).forEach(val => {
             const btn = document.createElement('button');
             btn.className = 'btn';
             btn.innerHTML = `$${val}$`;
@@ -413,10 +445,22 @@
     function setupStep4Options() {
         const container = document.getElementById('options4');
         const feedback = document.getElementById('q4-feedback');
+        container.innerHTML = '';
         const finalAn = currentA1 + (currentN - 1) * currentD;
-        let choices = [finalAn, finalAn + currentD, finalAn - currentD, -finalAn];
-        let uniqueChoices = Array.from(new Set(choices));
-        uniqueChoices.sort(() => Math.random() - 0.5).forEach(val => {
+        
+        let choiceSet = new Set([finalAn]);
+        let fallbacks = [finalAn + currentD, finalAn - currentD, -finalAn, (currentN - 1) * currentD];
+        
+        fallbacks.forEach(v => {
+            if(choiceSet.size < 4) choiceSet.add(v);
+        });
+        
+        while(choiceSet.size < 4) {
+            let randOffset = getRandomInt(-10, 10);
+            if(randOffset !== 0) choiceSet.add(finalAn + randOffset);
+        }
+
+        Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
             const btn = document.createElement('button');
             btn.className = 'btn';
             btn.innerHTML = `$${val}$`;
