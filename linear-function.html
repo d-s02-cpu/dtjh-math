@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>苗栗大同國中資源中心 - 互動練習</title>
+    <title>線型函數引導練習系統 - 苗栗大同國中資源中心</title>
     <script>
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
@@ -14,6 +14,7 @@
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     
     <style>
         :root {
@@ -40,6 +41,11 @@
             font-size: 1.6rem; margin: 0.5rem 0 1.5rem 0; padding: 1rem;
             background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
             line-height: 1.5;
+        }
+        /* p5 畫布容器 */
+        #canvas-container {
+            display: flex; justify-content: center; margin-bottom: 1rem;
+            background: #fff; border-radius: 10px; overflow: hidden;
         }
         .step-container {
             margin-top: 1rem; padding: 1rem; border-radius: 15px;
@@ -89,13 +95,13 @@
 
 <div class="container" id="start-screen">
     <h2>苗栗大同國中資源中心</h2>
-    <h3 id="quiz-title">線型函數練習</h3>
+    <h3 id="quiz-title">線型函數引導練習系統</h3>
     <div class="desc-text" id="quiz-desc">
         請選擇練習模式：
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
         <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：求函數值</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：待開發</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：辨識函數圖形</button>
     </div>
     
     <div id="qrcode-container">
@@ -111,28 +117,29 @@
     </div>
 
     <div class="question-text" id="mode-text"></div>
+    <div id="canvas-container"></div>
     <div id="question-box"></div>
 
     <div id="step1" class="step-container" style="display: block;">
-        <span class="step-title" id="step1-title">Step 1. 將 $x$ 代入算式</span>
+        <span class="step-title" id="step1-title">Step 1. 觀察圖形判斷</span>
         <div id="q1-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options1"></div>
     </div>
 
     <div id="step2" class="step-container">
-        <span class="step-title" id="step2-hint">Step 2. 計算乘法部分</span>
+        <span class="step-title" id="step2-hint">Step 2.</span>
         <div id="q2-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options2"></div>
     </div>
 
     <div id="step3" class="step-container">
-        <span class="step-title" id="step3-hint">Step 3. 得到最終結果</span>
+        <span class="step-title" id="step3-hint">Step 3.</span>
         <div id="q3-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options3"></div>
     </div>
 
     <div id="step4" class="step-container">
-        <span class="step-title" id="step4-hint">Step 4. 座標幾何意義</span>
+        <span class="step-title" id="step4-hint">Step 4.</span>
         <div id="q4-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options4"></div>
     </div>
@@ -153,6 +160,7 @@
     let totalScore = 0;
     let currentQ = {};
     let isFirstTryQ1 = true, isFirstTryQ2 = true, isFirstTryQ3 = true, isFirstTryQ4 = true;
+    let p5Instance = null;
 
     function formatNum(num, isLeading = false) {
         if (num < 0 && !isLeading) return `(${num})`;
@@ -163,7 +171,7 @@
         quizMode = mode;
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
-        document.getElementById('mode-badge').innerText = mode === 'mode1' ? "求函數值" : "模式二";
+        document.getElementById('mode-badge').innerText = mode === 'mode1' ? "求函數值" : "辨識圖形";
         generateQuestion();
     }
 
@@ -179,6 +187,32 @@
         return array;
     }
 
+    const sketch = (p) => {
+        p.setup = () => {
+            let canvas = p.createCanvas(300, 300);
+            canvas.parent('canvas-container');
+        };
+
+        p.draw = () => {
+            p.background(255);
+            p.translate(p.width/2, p.height/2);
+            p.stroke(200);
+            p.line(-p.width/2, 0, p.width/2, 0);
+            p.line(0, -p.height/2, 0, p.height/2);
+            p.stroke(74, 144, 226);
+            p.strokeWeight(3);
+            let scale = 20; 
+            let x1 = -10, x2 = 10;
+            let y1 = currentQ.a * x1 + currentQ.b;
+            let y2 = currentQ.a * x2 + currentQ.b;
+            p.line(x1 * scale, -y1 * scale, x2 * scale, -y2 * scale);
+            p.fill(0);
+            p.noStroke();
+            p.textSize(12);
+            p.text("O", 5, 15);
+        };
+    };
+
     function generateQuestion() {
         if (questionCount >= 10) {
             showResult();
@@ -189,101 +223,106 @@
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
         resetStepUI();
 
-        let a = 0; while(a === 0) a = getRandomInt(-9, 9);
-        let b = getRandomInt(-15, 15);
-        let x = getRandomInt(-9, 9);
-        currentQ = { a, b, x, am: a * x, y: a * x + b };
-
-        let aDisplay = a === 1 ? "" : (a === -1 ? "-" : a);
-        let bStr = b === 0 ? "" : (b > 0 ? `+ ${b}` : `- ${Math.abs(b)}`);
-        
-        document.getElementById('mode-text').innerText = ``;
-        document.getElementById('question-box').innerHTML = 
-            `已知線型函數 $y = ${aDisplay}x ${bStr}$，當 $x = ${x}$ 時，其函數值是多少？`;
+        if (quizMode === 'mode1') {
+            document.getElementById('canvas-container').style.display = 'none';
+            let a = 0; while(a === 0) a = getRandomInt(-9, 9);
+            let b = getRandomInt(-15, 15);
+            let x = getRandomInt(-9, 9);
+            currentQ = { a, b, x, am: a * x, y: a * x + b };
+            let aDisplay = a === 1 ? "" : (a === -1 ? "-" : a);
+            let bStr = b === 0 ? "" : (b > 0 ? `+ ${b}` : `- ${Math.abs(b)}`);
+            document.getElementById('question-box').innerHTML = `已知線型函數 $y = ${aDisplay}x ${bStr}$，當 $x = ${x}$ 時，其函數值是多少？`;
+            setupStep1();
+        } else {
+            document.getElementById('canvas-container').style.display = 'flex';
+            let isConstant = Math.random() > 0.5;
+            let a = isConstant ? 0 : (Math.random() > 0.5 ? getRandomInt(1, 3) : getRandomInt(-3, -1));
+            let b = getRandomInt(-5, 5);
+            currentQ = { a, b, type: isConstant ? "常數函數" : "一次函數" };
+            document.getElementById('question-box').innerHTML = `觀察下方的圖形，判斷其特徵與函數種類。`;
+            if (!p5Instance) {
+                p5Instance = new p5(sketch);
+            }
+            setupStep1Mode2();
+        }
         
         if (window.MathJax) MathJax.typeset();
-        setupStep1();
     }
 
     function setupStep1() {
+        document.getElementById('step1-title').innerText = "Step 1. 將 $x$ 代入算式";
         let bSign = currentQ.b >= 0 ? '+' : '-';
         let bAbs = Math.abs(currentQ.b);
         let correct = `${currentQ.a} \\times ${formatNum(currentQ.x)} ${bSign} ${bAbs}`;
-        
         let wrong1 = `${currentQ.a} + ${formatNum(currentQ.x)} ${bSign} ${bAbs}`; 
-        let wrong2 = `${currentQ.a} \\times x ${bSign} ${bAbs}`; 
-        let wrong3 = `${currentQ.a} \\times ${formatNum(currentQ.x + getRandomInt(1,2))} ${bSign} ${bAbs}`; 
-
-        let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
-        while(options.length < 4) options.push(`${currentQ.a} \\times ${currentQ.x - 1} ${bSign} ${bAbs}`);
-
+        let options = shuffleArray([correct, wrong1, `${currentQ.a} \\times x ${bSign} ${bAbs}`, `${currentQ.a} \\times ${currentQ.x + 1} ${bSign} ${bAbs}`]);
         renderOptions(1, options, correct, () => {
-            if(isFirstTryQ1) totalScore += 2; // 步驟分
+            if(isFirstTryQ1) totalScore += 2;
             document.getElementById('step2').style.display = 'block';
             setupStep2();
-        }, "", {wrong1: "運算符號錯誤", wrong2: "尚未代入數值", default: "代入過程有誤"});
+        }, "", {wrong1: "運算符號錯誤", default: "代入過程有誤"});
     }
 
     function setupStep2() {
         let correct = currentQ.am;
-        let wrong1 = -currentQ.am; 
-        let wrong2 = currentQ.a + currentQ.x; 
-        let wrong3 = Math.abs(currentQ.a * currentQ.x) + 1; 
-
-        let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
-        while(options.length < 4) options.push(correct + getRandomInt(1, 5));
-
+        let options = shuffleArray([correct, -currentQ.am, currentQ.a + currentQ.x, currentQ.am + 1]);
         renderOptions(2, options, correct, () => {
-            if(isFirstTryQ2) totalScore += 2; // 步驟分
+            if(isFirstTryQ2) totalScore += 2;
             document.getElementById('step3').style.display = 'block';
             setupStep3();
-        }, `請問 $${currentQ.a} \\times ${formatNum(currentQ.x)}$ 的結果是？`, {wrong1: "請注意正負號", wrong2: "應使用乘法運算", default: "乘法計算有誤"});
+        }, `請問 $${currentQ.a} \\times ${formatNum(currentQ.x)}$ 的結果是？`, {wrong1: "請注意正負號", default: "乘法計算有誤"});
     }
 
     function setupStep3() {
         let correct = currentQ.y;
-        let wrong1 = currentQ.am - currentQ.b; 
-        let wrong2 = currentQ.am + currentQ.b + 1; 
-        let wrong3 = currentQ.am; 
-
-        let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
-        while(options.length < 4) options.push(correct + getRandomInt(-3, 3));
-
+        let options = shuffleArray([correct, currentQ.am - currentQ.b, currentQ.am + currentQ.b + 1, currentQ.am]);
         let opText = currentQ.b >= 0 ? '+' : '-';
         renderOptions(3, options, correct, () => {
-            if(isFirstTryQ3) totalScore += 2; // 步驟分
+            if(isFirstTryQ3) totalScore += 2;
             document.getElementById('step4').style.display = 'block';
             setupStep4();
-        }, `最後計算 $${currentQ.am} ${opText} ${Math.abs(currentQ.b)} = ?$`, {wrong1: "注意加減符號", wrong3: "尚未運算常數項", default: "最後計算有誤"});
+        }, `最後計算 $${currentQ.am} ${opText} ${Math.abs(currentQ.b)} = ?$`, {default: "最後計算有誤"});
     }
 
     function setupStep4() {
         let correct = `(${currentQ.x}, ${currentQ.y})`;
-        let wrong1 = `(${currentQ.y}, ${currentQ.x})`; 
-        let wrong2 = `(${currentQ.a}, ${currentQ.b})`; 
-        let wrong3 = `(${currentQ.x}, 0)`; 
-
-        let options = shuffleArray(Array.from(new Set([correct, wrong1, wrong2, wrong3])));
-        while(options.length < 4) options.push(`(x, y)`);
-
+        let options = shuffleArray([correct, `(${currentQ.y}, ${currentQ.x})`, `(${currentQ.a}, ${currentQ.b})`, `(${currentQ.x}, 0)`]);
         renderOptions(4, options, correct, () => {
-            if(isFirstTryQ4) totalScore += 2; // 步驟分
-            
-            // 全對獎勵：若四個標記皆為 true，額外加 2 分
+            if(isFirstTryQ4) totalScore += 2;
             if(isFirstTryQ1 && isFirstTryQ2 && isFirstTryQ3 && isFirstTryQ4) totalScore += 2;
-            
             document.getElementById('next-btn').style.display = 'block';
-        }, `此函數圖形會通過坐標平面上哪一點？`, {wrong1: "座標順序為 (x, y)", wrong2: "請使用 x 與函數值", default: "座標概念有誤"});
+        }, `此函數圖形會通過坐標平面上哪一點？`, {wrong1: "座標順序為 (x, y)", default: "座標概念有誤"});
+    }
+
+    function setupStep1Mode2() {
+        document.getElementById('step1-title').innerText = "Step 1. 觀察圖形的特徵";
+        let correct = currentQ.a === 0 ? "圖形是一條水平線" : "圖形是一條斜直線";
+        let wrong = currentQ.a === 0 ? "圖形是一條斜直線" : "圖形是一條水平線";
+        let options = shuffleArray([correct, wrong]);
+        renderOptions(1, options, correct, () => {
+            if(isFirstTryQ1) totalScore += 5;
+            document.getElementById('step2').style.display = 'block';
+            setupStep2Mode2();
+        }, "", {default: "請再觀察圖形的傾斜狀態"});
+    }
+
+    function setupStep2Mode2() {
+        document.getElementById('step2-hint').innerText = "Step 2. 判斷此線型函數的種類";
+        let correct = currentQ.type;
+        let options = ["一次函數", "常數函數"];
+        renderOptions(2, options, correct, () => {
+            if(isFirstTryQ2) totalScore += 5;
+            document.getElementById('next-btn').style.display = 'block';
+        }, "根據特徵，這是哪一種函數？", {default: "常數函數的圖形必定是水平線喔！"});
     }
 
     function renderOptions(stepNum, options, correct, nextStep, hintText = "", feedbackMap = {}) {
         const container = document.getElementById(`options${stepNum}`);
         if(hintText) document.getElementById(`step${stepNum}-hint`).innerHTML = hintText;
-        
         options.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn';
-            btn.innerHTML = `$${opt}$`; 
+            btn.innerHTML = (quizMode === 'mode2') ? opt : `$${opt}$`; 
             btn.onclick = () => {
                 if (String(opt) === String(correct)) {
                     btn.classList.add('correct');
@@ -294,7 +333,6 @@
                 } else {
                     btn.classList.add('wrong');
                     let msg = feedbackMap.default || "再試一次";
-                    if(feedbackMap.wrong1 && String(opt).includes('+') && !String(correct).includes('+')) msg = feedbackMap.wrong1;
                     document.getElementById(`q${stepNum}-feedback`).style.color = "var(--error-color)";
                     document.getElementById(`q${stepNum}-feedback`).innerText = msg;
                     markError(stepNum);
@@ -321,8 +359,6 @@
         isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = isFirstTryQ4 = true;
         for(let i=2; i<=4; i++) {
             document.getElementById(`step${i}`).style.display = 'none';
-            if(i===2) document.getElementById('step2-hint').innerText = "Step 2. 計算乘法部分";
-            if(i===3) document.getElementById('step3-hint').innerText = "Step 3. 得到最終結果";
         }
         document.getElementById('next-btn').style.display = 'none';
         ['1','2','3','4'].forEach(num => {
