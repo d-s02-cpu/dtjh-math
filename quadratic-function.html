@@ -97,8 +97,8 @@
         請選擇練習模式：
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：逐步引導</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：隨機挑戰</button>
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：圖形特徵判定</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：極值挑戰</button>
     </div>
     
     <div id="qrcode-container">
@@ -157,7 +157,7 @@
         quizMode = mode;
         questionCount = 0;
         totalScore = 0;
-        document.getElementById('mode-badge').innerText = (mode === 'mode1' ? '逐步引導模式' : '隨機挑戰模式');
+        document.getElementById('mode-badge').innerText = (mode === 'mode1' ? '圖形特徵判定' : '極值挑戰模式');
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
         generateQuestion();
@@ -199,10 +199,14 @@
         }
 
         if (quizMode === 'mode1') {
+            document.getElementById('step1-title').innerText = "Q1. 開口方向？";
+            document.getElementById('step2-hint').innerText = "Q2. 對稱軸方程式？";
+            document.getElementById('step3-hint').innerText = "Q3. 頂點座標？";
             setupStep(1);
         } else {
-            const randomStep = Math.floor(Math.random() * 3) + 1;
-            setupStep(randomStep);
+            document.getElementById('step1-title').innerText = "Q1. 此函數有最大值還是最小值？";
+            document.getElementById('step2-hint').innerText = "Q2. 該最大值或最小值是多少？";
+            setupMode2Step(1);
         }
     }
 
@@ -215,29 +219,25 @@
         optionsDiv.innerHTML = '';
 
         let options = [];
-        let correctIdx = 0;
         let correctAnswer = "";
 
         if (stepNum === 1) {
             correctAnswer = currentData.a > 0 ? "向上" : "向下";
             options = ["向上", "向下", "向左", "向右"];
-            options = shuffleArray(options);
-            correctIdx = options.indexOf(correctAnswer);
         } else if (stepNum === 2) {
             const h = currentData.h;
             correctAnswer = `$x = ${h}$`;
-            let rawOptions = [correctAnswer, `$x = ${-h}$`, `$y = ${h}$`, `$x = 0$`, `$y = 0$`, `$x = ${h+1}$`, `$x = ${h-1}$`];
-            options = [...new Set(rawOptions)].slice(0, 4);
-            options = shuffleArray(options);
-            correctIdx = options.indexOf(correctAnswer);
+            let rawSet = new Set([correctAnswer, `$x = ${-h}$`, `$y = ${h}$`, `$x = 0$`, `$y = 0$`, `$x = ${h+1}$`]);
+            options = Array.from(rawSet).slice(0, 4);
         } else if (stepNum === 3) {
             const { h, k } = currentData;
             correctAnswer = `$(${h}, ${k})$`;
-            let rawOptions = [correctAnswer, `$(${-h}, ${k})$`, `$(${h}, ${-k})$`, `$(${k}, ${h})$`, `$(${-h}, ${-k})$`, `$(0, 0)$` ];
-            options = [...new Set(rawOptions)].slice(0, 4);
-            options = shuffleArray(options);
-            correctIdx = options.indexOf(correctAnswer);
+            let rawSet = new Set([correctAnswer, `$(${-h}, ${k})$`, `$(${h}, ${-k})$`, `$(${k}, ${h})$`, `$(${-h}, ${-k})$`, `$(0, 0)$`]);
+            options = Array.from(rawSet).slice(0, 4);
         }
+
+        options = shuffleArray(options);
+        let correctIdx = options.indexOf(correctAnswer);
 
         options.forEach((opt, index) => {
             const button = document.createElement('button');
@@ -247,7 +247,45 @@
             optionsDiv.appendChild(button);
         });
 
-        // 優化排版呼叫，放在下一幀處理以防阻塞
+        if (window.MathJax) {
+            requestAnimationFrame(() => {
+                MathJax.typesetPromise([optionsDiv]);
+            });
+        }
+    }
+
+    function setupMode2Step(stepNum) {
+        canScoreCurrentStep = true;
+        const stepDiv = document.getElementById(`step${stepNum}`);
+        const optionsDiv = document.getElementById(`options${stepNum}`);
+        
+        stepDiv.style.display = 'block';
+        optionsDiv.innerHTML = '';
+
+        let options = [];
+        let correctAnswer = "";
+
+        if (stepNum === 1) {
+            correctAnswer = currentData.a > 0 ? "最小值" : "最大值";
+            options = ["最大值", "最小值", "不確定", "以上皆非"];
+        } else if (stepNum === 2) {
+            const k = currentData.k;
+            correctAnswer = `$${k}$`;
+            let rawSet = new Set([correctAnswer, `$${-k}$`, `$${currentData.h}$`, `$${-currentData.h}$`, `$0$`, `$${k+1}$`]);
+            options = Array.from(rawSet).slice(0, 4);
+        }
+
+        options = shuffleArray(options);
+        let correctIdx = options.indexOf(correctAnswer);
+
+        options.forEach((opt, index) => {
+            const button = document.createElement('button');
+            button.className = 'btn';
+            button.innerHTML = opt; 
+            button.onclick = () => checkAnswer(stepNum, index, correctIdx);
+            optionsDiv.appendChild(button);
+        });
+
         if (window.MathJax) {
             requestAnimationFrame(() => {
                 MathJax.typesetPromise([optionsDiv]);
@@ -269,18 +307,19 @@
             if (canScoreCurrentStep) {
                 if (quizMode === 'mode1') {
                     totalScore += 3;
-                    if (stepNum === 3 && !hasFailedAnyStepInQuestion) {
-                        totalScore += 1;
-                    }
+                    if (stepNum === 3 && !hasFailedAnyStepInQuestion) totalScore += 1;
                 } else {
-                    totalScore += 10;
+                    totalScore += 5;
                 }
             }
 
             if (quizMode === 'mode1' && stepNum < 3) {
-                // 輕微縮短延遲並確保排版不卡頓
                 setTimeout(() => {
                     requestAnimationFrame(() => setupStep(stepNum + 1));
+                }, 400);
+            } else if (quizMode === 'mode2' && stepNum < 2) {
+                setTimeout(() => {
+                    requestAnimationFrame(() => setupMode2Step(stepNum + 1));
                 }, 400);
             } else {
                 document.getElementById('next-btn').style.display = 'block';
