@@ -88,18 +88,20 @@
 
 <div class="container" id="start-screen">
     <h2>苗栗大同國中資源中心</h2>
-    <h3 id="quiz-title">新題型練習</h3>
+    <h3 id="quiz-title">數學互動練習系統</h3>
     <div class="desc-text" id="quiz-desc">
-        請選擇練習模式：
+        請選擇練習單元：
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二</button>
+        <button class="btn" onclick="startQuiz('arithmetic-sequence.html')">等差數列練習</button>
+        <button class="btn" onclick="startQuiz('linear-equation.html')">二元一次方程式練習</button>
+        <button class="btn" onclick="startQuiz('linear-function.html')">一次函數與線型函數</button>
+        <button class="btn" onclick="startQuiz('quadratic-function.html')">二次函數練習</button>
     </div>
     
     <div id="qrcode-container">
         <div id="qrcode"></div>
-        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享首頁</span>
     </div>
 </div>
 
@@ -155,19 +157,14 @@
     let isFirstTryQ3 = true;
     let isFirstTryQ4 = true;
 
-    // 保留數字格式化輔助函數
     function formatNum(num, isLeading = false) {
         if (num < 0 && !isLeading) return `(${num})`;
         return num.toString();
     }
 
-    function startQuiz(mode) {
-        quizMode = mode;
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('quiz-container').style.display = 'block';
-        
-        // 模式切換邏輯待填入
-        generateQuestion();
+    // 跳轉至指定的 HTML 檔案
+    function startQuiz(url) {
+        window.location.href = url;
     }
 
     function getRandomInt(min, max) {
@@ -179,14 +176,9 @@
             showResult();
             return;
         }
-
         questionCount++;
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
-        
-        // 重設狀態
         resetStepUI();
-
-        // 題目生成邏輯待填入
     }
 
     function resetStepUI() {
