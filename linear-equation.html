@@ -95,7 +95,7 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
         <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：$ax = b$ 型</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + bx = c$ 型</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + b = cx + d$ 型</button>
     </div>
     
     <div id="qrcode-container">
@@ -120,9 +120,15 @@
     </div>
 
     <div id="step2" class="step-container">
-        <span class="step-title" id="step2-hint"></span>
+        <span class="step-title" id="step2-hint">Q2. 化簡同類項</span>
         <div id="q2-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options2"></div>
+    </div>
+
+    <div id="step3" class="step-container">
+        <span class="step-title" id="step3-hint">Q3. 方程式的解 $x = ?$</span>
+        <div id="q3-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options3"></div>
     </div>
 
     <button id="next-btn" onclick="generateQuestion()">下一題</button>
@@ -141,11 +147,10 @@
     let totalScore = 0;
     let isFirstTryQ1 = true; 
     let isFirstTryQ2 = true;
+    let isFirstTryQ3 = true;
 
-    let currentA = 0;
-    let currentB = 0;
-    let currentX = ""; // 存放答案的字串
-    let currentC = 0;
+    let currentA = 0, currentB = 0, currentC = 0, currentD = 0;
+    let currentX = ""; 
 
     function getGCD(a, b) {
         a = Math.abs(a);
@@ -176,9 +181,16 @@
         return n.toString();
     }
 
-    function formatNum(num, isLeading = false) {
-        if (num < 0 && !isLeading) return `(${num})`;
-        return num.toString();
+    function formatTermWithSign(n, char) {
+        if (n === 0) return "";
+        let sign = n > 0 ? "+ " : "- ";
+        let coeff = Math.abs(n) === 1 ? "" : Math.abs(n);
+        return sign + coeff + char;
+    }
+
+    function formatNumWithSign(n) {
+        if (n >= 0) return "+ " + n;
+        return "- " + Math.abs(n);
     }
 
     function startQuiz(mode) {
@@ -189,9 +201,10 @@
         if (quizMode === 'mode1') {
             document.getElementById('mode-badge').innerText = '目前模式：ax = b';
             document.getElementById('step1-title').innerText = 'Q1. 方程式的解 $x = ?$';
+            document.getElementById('step3').style.display = 'none';
         } else {
-            document.getElementById('mode-badge').innerText = '目前模式：ax + bx = c';
-            document.getElementById('step1-title').innerText = 'Q1. 同類項合併後，方程式會變成？';
+            document.getElementById('mode-badge').innerText = '目前模式：ax + b = cx + d';
+            document.getElementById('step1-title').innerText = 'Q1. 移項之後，方程式會變成？';
         }
         
         generateQuestion();
@@ -209,13 +222,11 @@
 
         questionCount++;
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
-        
         resetStepUI();
 
         if (quizMode === 'mode1') {
             let a, b, x_ans;
             if (questionCount >= 6) {
-                // 第6-10題：x 為有理數，a, b 互質
                 let a_pool = [-10,-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9,10];
                 a = a_pool[Math.floor(Math.random() * a_pool.length)];
                 do {
@@ -223,47 +234,30 @@
                 } while (b === 0 || getGCD(a, b) !== 1 || Math.abs(b/a) === 1);
                 x_ans = simplifyFrac(b, a);
             } else {
-                // 第1-5題：x 為整數
                 let a_pool = [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,2,3,4,5,6,7,8,9,10];
                 a = a_pool[Math.floor(Math.random() * a_pool.length)];
                 let tempX = getRandomInt(-10, 10);
                 b = a * tempX;
                 x_ans = tempX.toString();
             }
-            
-            currentA = a;
-            currentB = b;
-            currentX = x_ans; 
-
-            let displayA = formatCoefficient(currentA);
-            document.getElementById('question-box').innerHTML = `$$ ${displayA}x = ${currentB} $$`;
+            currentA = a; currentB = b; currentX = x_ans; 
+            document.getElementById('question-box').innerHTML = `$$ ${formatCoefficient(currentA)}x = ${currentB} $$`;
             setupOptionsMode1();
         } else {
-            let a, b, x;
-            if (questionCount <= 3) { 
-                a = getRandomInt(1, 10);
-                b = getRandomInt(1, 10);
-            } else if (questionCount <= 6) { 
-                a = getRandomInt(-10, -1);
-                b = getRandomInt(-10, -1);
-            } else { 
-                a = getRandomInt(1, 10);
-                b = getRandomInt(-10, -1);
-                if (Math.random() > 0.5) [a, b] = [b, a];
-                if (a + b === 0) b += 1;
-            }
-            x = getRandomInt(-10, 10);
-            currentA = a;
-            currentB = b;
-            currentX = x.toString(); 
-            currentC = (a + b) * x;
+            let a, b, c, d;
+            do {
+                a = getRandomInt(-20, 20); if(a===0) a=1;
+                c = getRandomInt(-20, 20); if(c===0) c=-1;
+                b = getRandomInt(-20, 20);
+                d = getRandomInt(-20, 20);
+            } while (a === c || b === d);
 
-            let displayA = formatCoefficient(currentA);
-            let bSign = currentB > 0 ? "+" : "-";
-            let bCoeff = formatCoefficient(Math.abs(currentB));
-            let bStr = `${bSign} ${bCoeff}x`;
-            
-            document.getElementById('question-box').innerHTML = `$$ ${displayA}x ${bStr} = ${currentC} $$`;
+            currentA = a; currentB = b; currentC = c; currentD = d;
+            currentX = simplifyFrac(d - b, a - c);
+
+            let partL = `${formatCoefficient(a)}x ${formatNumWithSign(b)}`;
+            let partR = `${formatCoefficient(c)}x ${formatNumWithSign(d)}`;
+            document.getElementById('question-box').innerHTML = `$$ ${partL} = ${partR} $$`;
             setupStep1Mode2();
         }
         MathJax.typesetPromise();
@@ -272,23 +266,19 @@
     function setupOptionsMode1() {
         const container = document.getElementById('options1');
         const feedback = document.getElementById('q1-feedback');
-        let correct = currentX;
-        let choices = new Set([correct]);
-
-        // 錯誤選項
+        let choices = new Set([currentX]);
         choices.add(simplifyFrac(currentA, currentB));
         choices.add(simplifyFrac(-currentB, currentA));
-        if (choices.size < 4) choices.add(simplifyFrac(currentB + 1, currentA));
         while (choices.size < 4) choices.add(getRandomInt(-12, 12).toString());
 
-        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+        renderButtons(container, Array.from(choices), currentX, (isCorrect) => {
             if (isCorrect) {
                 if (isFirstTryQ1) totalScore += 10;
                 document.getElementById('next-btn').style.display = 'block';
                 feedback.innerText = '';
             } else {
                 isFirstTryQ1 = false;
-                feedback.innerHTML = `提示：運用等量公理，將等號兩邊同時除以 $${currentA}$。`;
+                feedback.innerHTML = `提示：等號兩邊同時除以 $${currentA}$。`;
                 MathJax.typesetPromise();
             }
         });
@@ -297,27 +287,21 @@
     function setupStep1Mode2() {
         const container = document.getElementById('options1');
         const feedback = document.getElementById('q1-feedback');
-        let combinedA = currentA + currentB;
-        let correct = `${formatCoefficient(combinedA)}x = ${currentC}`;
         
+        let correct = `${formatCoefficient(currentA)}x ${formatTermWithSign(-currentC, 'x')} = ${currentD} ${formatNumWithSign(-currentB)}`;
         let choices = new Set([correct]);
-        choices.add(`${formatCoefficient(currentA - currentB)}x = ${currentC}`);
-        choices.add(`${formatCoefficient(Math.abs(combinedA))}x = ${currentC}`);
-        choices.add(`${combinedA} = ${currentC}x`);
-        
-        while (choices.size < 4) choices.add(`${formatCoefficient(getRandomInt(-20, 20))}x = ${currentC}`);
+        choices.add(`${formatCoefficient(currentA)}x ${formatTermWithSign(currentC, 'x')} = ${currentD} ${formatNumWithSign(currentB)}`);
+        choices.add(`${formatCoefficient(currentA)}x ${formatTermWithSign(-currentC, 'x')} = ${currentB} ${formatNumWithSign(-currentD)}`);
+        choices.add(`${formatCoefficient(currentC)}x ${formatTermWithSign(-currentA, 'x')} = ${currentD} ${formatNumWithSign(-currentB)}`);
 
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
-                if (isFirstTryQ1) totalScore += 5;
-                feedback.innerText = '';
+                if (isFirstTryQ1) totalScore += 3;
                 document.getElementById('step2').style.display = 'block';
-                document.getElementById('step2-hint').innerHTML = `Q2. 方程式的解 $x = ?$`;
                 setupStep2Mode2();
-                MathJax.typesetPromise();
             } else {
                 isFirstTryQ1 = false;
-                feedback.innerHTML = `提示：$${currentA} + ${formatNum(currentB)}$ 等於多少呢？`;
+                feedback.innerHTML = `提示：將 $x$ 移向左邊，常數移向右邊，記得變號喔！`;
                 MathJax.typesetPromise();
             }
         });
@@ -326,18 +310,42 @@
     function setupStep2Mode2() {
         const container = document.getElementById('options2');
         const feedback = document.getElementById('q2-feedback');
-        let correct = currentX;
-        let choices = new Set([correct, (parseInt(currentX)+1).toString(), (parseInt(currentX)*-1).toString(), "0"]);
-        while (choices.size < 4) choices.add(getRandomInt(-10, 10).toString());
+        let combinedA = currentA - currentC;
+        let combinedB = currentD - currentB;
+        let correct = `${formatCoefficient(combinedA)}x = ${combinedB}`;
+        
+        let choices = new Set([correct]);
+        choices.add(`${formatCoefficient(currentA + currentC)}x = ${combinedB}`);
+        choices.add(`${formatCoefficient(combinedA)}x = ${currentD + currentB}`);
+        choices.add(`${formatCoefficient(-combinedA)}x = ${combinedB}`);
 
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
-                if (isFirstTryQ2) totalScore += 5;
-                feedback.innerText = '';
-                document.getElementById('next-btn').style.display = 'block';
+                if (isFirstTryQ2) totalScore += 3;
+                document.getElementById('step3').style.display = 'block';
+                setupStep3Mode2();
             } else {
                 isFirstTryQ2 = false;
-                feedback.innerText = '計算錯誤，請再試一次。';
+                feedback.innerText = '計算有誤，請再檢查一次係數。';
+            }
+        });
+    }
+
+    function setupStep3Mode2() {
+        const container = document.getElementById('options3');
+        const feedback = document.getElementById('q3-feedback');
+        let choices = new Set([currentX]);
+        choices.add(simplifyFrac(currentA - currentC, currentD - currentB));
+        while (choices.size < 4) choices.add(getRandomInt(-10, 10).toString());
+
+        renderButtons(container, Array.from(choices), currentX, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ3) totalScore += 3;
+                if (isFirstTryQ1 && isFirstTryQ2 && isFirstTryQ3) totalScore += 1;
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                isFirstTryQ3 = false;
+                feedback.innerText = '最後一步了，加油！檢查一下正負號。';
             }
         });
     }
@@ -360,15 +368,19 @@
             };
             container.appendChild(btn);
         });
+        MathJax.typesetPromise();
     }
 
     function resetStepUI() {
-        isFirstTryQ1 = isFirstTryQ2 = true;
+        isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = true;
         document.getElementById('step2').style.display = 'none';
+        document.getElementById('step3').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
-        ['1','2'].forEach(num => {
-            document.getElementById(`options${num}`).innerHTML = '';
-            document.getElementById(`q${num}-feedback`).innerText = '';
+        ['1','2','3'].forEach(num => {
+            const opt = document.getElementById(`options${num}`);
+            if(opt) opt.innerHTML = '';
+            const fb = document.getElementById(`q${num}-feedback`);
+            if(fb) fb.innerText = '';
         });
     }
 
