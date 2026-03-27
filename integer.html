@@ -95,7 +95,8 @@
         拆解思考步驟，建立正負數運算邏輯。
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('intAddSub')">開始練習：模式一</button>
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('stepByStep')">開始練習：模式一 (循序拆解)</button>
+        <button class="btn" style="background: var(--accent-color); color: white; border-color: var(--accent-color);" onclick="startQuiz('direct')">開始練習：模式二 (挑戰模式)</button>
     </div>
     
     <div id="qrcode-container">
@@ -113,7 +114,7 @@
     <div class="question-text" id="mode-text">請計算下列算式之值：</div>
     <div id="question-box"></div>
 
-    <div id="step1" class="step-container" style="display: block;">
+    <div id="step1" class="step-container">
         <span class="step-title" id="step1-title">Step 1. 判斷增減關係</span>
         <div id="q1-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options1"></div>
@@ -147,13 +148,15 @@
     let type = ''; // '-a+b' or '-a-b'
     let questionCount = 0;
     let totalScore = 0;
+    let quizMode = 'stepByStep'; // 'stepByStep' or 'direct'
     let stepCountCorrect = 0;
     let isFirstTryQ1 = true, isFirstTryQ2 = true, isFirstTryQ3 = true;
 
     function startQuiz(mode) {
+        quizMode = mode;
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
-        document.getElementById('mode-badge').innerText = '目前模式：整數加減';
+        document.getElementById('mode-badge').innerText = mode === 'stepByStep' ? '目前模式：循序拆解' : '目前模式：挑戰模式';
         generateQuestion();
     }
 
@@ -172,6 +175,7 @@
         
         isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = true;
         stepCountCorrect = 0;
+        document.getElementById('step1').style.display = 'none';
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step3').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
@@ -187,7 +191,15 @@
         } else {
             document.getElementById('question-box').innerHTML = `$$ -${currentA} - ${currentB} $$`;
         }
-        setupStep1();
+
+        if (quizMode === 'stepByStep') {
+            document.getElementById('step1').style.display = 'block';
+            setupStep1();
+        } else {
+            // 模式二直接顯示結果輸入
+            document.getElementById('step3').style.display = 'block';
+            setupStep3();
+        }
         MathJax.typesetPromise();
     }
 
@@ -201,13 +213,9 @@
         if (type === '-a+b') {
             document.getElementById('step1-title').innerHTML = `Step 1. 先減 $${currentA}$ 分，再加 $${currentB}$ 分，請問：`;
             choices = ['加的多', '減的多', '一樣多', '不確定'];
-            if (currentA > currentB) {
-                correct = '減的多';
-            } else if (currentB > currentA) {
-                correct = '加的多';
-            } else {
-                correct = '一樣多';
-            }
+            if (currentA > currentB) correct = '減的多';
+            else if (currentB > currentA) correct = '加的多';
+            else correct = '一樣多';
         } else {
             document.getElementById('step1-title').innerHTML = `Step 1. 先減 $${currentA}$ 分，再減 $${currentB}$ 分，最後分數一定是正的還是負的？`;
             correct = '負的';
@@ -230,7 +238,6 @@
                         document.getElementById('step2').style.display = 'block';
                         setupStep2();
                     } else {
-                        // -a-b 模式直接跳過 Step 2，進入 Step 3 (呈現為 Step 2)
                         document.getElementById('step3').style.display = 'block';
                         setupStep3();
                     }
@@ -251,7 +258,6 @@
         
         let correct = '';
         const resultValue = (-currentA + currentB);
-        
         if (resultValue > 0) correct = '正的';
         else if (resultValue < 0) correct = '負的';
         else correct = '都不是';
@@ -282,16 +288,18 @@
         const feedback = document.getElementById('q3-feedback');
         const resultValue = (type === '-a+b') ? (-currentA + currentB) : (-currentA - currentB);
         
-        // 如果是 -a-b，標題改為 Step 2
-        const stepNum = (type === '-a+b') ? '3' : '2';
-        document.getElementById('step3-title').innerText = `Step ${stepNum}. 所以最終結果算出來「得」多少？`;
+        if (quizMode === 'stepByStep') {
+            const stepNum = (type === '-a+b') ? '3' : '2';
+            document.getElementById('step3-title').innerText = `Step ${stepNum}. 所以最終結果算出來「得」多少？`;
+        } else {
+            document.getElementById('step3-title').innerText = `請直接選擇計算結果：`;
+        }
 
         let choiceSet = new Set([resultValue]);
         choiceSet.add(currentA + currentB);
         choiceSet.add(Math.abs(currentA - currentB));
         choiceSet.add(-(currentA + currentB));
         choiceSet.add(currentA - currentB);
-        
         while(choiceSet.size < 4) choiceSet.add(resultValue + getRandomInt(-5, 5));
 
         Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
@@ -301,12 +309,16 @@
             btn.onclick = () => {
                 if (parseInt(val) === resultValue) {
                     btn.classList.add('correct');
-                    if (isFirstTryQ3) { 
-                        totalScore += (type === '-a+b') ? 3 : 5; 
-                        stepCountCorrect++; 
+                    if (quizMode === 'stepByStep') {
+                        if (isFirstTryQ3) { 
+                            totalScore += (type === '-a+b') ? 3 : 5; 
+                            stepCountCorrect++; 
+                        }
+                        if (type === '-a+b' && stepCountCorrect === 3) totalScore += 1;
+                    } else {
+                        // 模式二直接答對得 10 分
+                        if (isFirstTryQ3) totalScore += 10;
                     }
-                    // -a+b 模式全對加 1 分湊 10 分；-a-b 兩步各 5 分已滿 10 分
-                    if (type === '-a+b' && stepCountCorrect === 3) totalScore += 1;
                     
                     container.querySelectorAll('.btn').forEach(b => b.disabled = true);
                     document.getElementById('next-btn').style.display = 'block';
