@@ -182,6 +182,14 @@
         return n.toString();
     }
 
+    // 關鍵修正：針對非第一項的 x 係數處理加號與省略數字 1
+    function formatSecondaryCoefficient(n) {
+        if (n === 1) return "+ ";
+        if (n === -1) return "- ";
+        if (n > 0) return "+ " + n;
+        return "- " + Math.abs(n);
+    }
+
     function formatNumWithSign(n) {
         if (n >= 0) return "+ " + n;
         return "- " + Math.abs(n);
@@ -280,7 +288,8 @@
             }
             currentA = a; currentB = b; currentC = c; currentD = sumAB;
             currentX = simplifyFrac(c, sumAB);
-            let partL = `${formatCoefficient(a)}x ${formatNumWithSign(b)}x`;
+            // 修正點：第二項使用 formatSecondaryCoefficient
+            let partL = `${formatCoefficient(a)}x ${formatSecondaryCoefficient(b)}x`;
             document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c} $$`;
             setupStep1Mode3();
         }
@@ -390,7 +399,8 @@
                 setupStep2Mode3();
             } else {
                 isFirstTryQ1 = false;
-                feedback.innerHTML = `提示：合併左邊的 $x$ 項，$(${currentA} ${formatNumWithSign(currentB)})x$。`;
+                // 提示訊息也修正顯示方式
+                feedback.innerHTML = `提示：合併左邊的 $x$ 項，$(${currentA} ${formatSecondaryCoefficient(currentB).trim()})x$。`;
                 MathJax.typesetPromise();
             }
         });
