@@ -95,7 +95,8 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
         <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：$ax = b$ 型</button>
-        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + b = cx + d$ 型</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + b = c$ 型</button>
+        <button class="btn" style="background: #9c27b0; color: white; border-color: #9c27b0;" onclick="startQuiz('mode3')">模式三：$ax + bx = c$ 型</button>
     </div>
     
     <div id="qrcode-container">
@@ -120,7 +121,7 @@
     </div>
 
     <div id="step2" class="step-container">
-        <span class="step-title" id="step2-hint">Q2. 化簡同類項</span>
+        <span class="step-title" id="step2-hint">Q2. 第二步</span>
         <div id="q2-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options2"></div>
     </div>
@@ -181,13 +182,6 @@
         return n.toString();
     }
 
-    function formatTermWithSign(n, char) {
-        if (n === 0) return "";
-        let sign = n > 0 ? "+ " : "- ";
-        let coeff = Math.abs(n) === 1 ? "" : Math.abs(n);
-        return sign + coeff + char;
-    }
-
     function formatNumWithSign(n) {
         if (n >= 0) return "+ " + n;
         return "- " + Math.abs(n);
@@ -202,9 +196,17 @@
             document.getElementById('mode-badge').innerText = '目前模式：ax = b';
             document.getElementById('step1-title').innerText = 'Q1. 方程式的解 $x = ?$';
             document.getElementById('step3').style.display = 'none';
-        } else {
-            document.getElementById('mode-badge').innerText = '目前模式：ax + b = cx + d';
+        } else if (quizMode === 'mode2') {
+            document.getElementById('mode-badge').innerText = '目前模式：ax + b = c';
             document.getElementById('step1-title').innerText = 'Q1. 移項之後，方程式會變成？';
+            document.getElementById('step2-hint').innerText = 'Q2. 化簡常數項，方程式會變成？';
+            document.getElementById('step3-hint').innerText = 'Q3. 所以，方程式的解 $x = ?$';
+            document.getElementById('step3').style.display = 'none'; 
+        } else if (quizMode === 'mode3') {
+            document.getElementById('mode-badge').innerText = '目前模式：ax + bx = c';
+            document.getElementById('step1-title').innerText = 'Q1. 同類項合併後，方程式會變成？';
+            document.getElementById('step2-hint').innerText = 'Q2. 所以，方程式的解 $x = ?$';
+            document.getElementById('step3').style.display = 'none';
         }
         
         generateQuestion();
@@ -243,22 +245,44 @@
             currentA = a; currentB = b; currentX = x_ans; 
             document.getElementById('question-box').innerHTML = `$$ ${formatCoefficient(currentA)}x = ${currentB} $$`;
             setupOptionsMode1();
-        } else {
+        } else if (quizMode === 'mode2') {
             let a, b, c, d;
-            do {
-                a = getRandomInt(-20, 20); if(a===0) a=1;
-                c = getRandomInt(-20, 20); if(c===0) c=-1;
-                b = getRandomInt(-20, 20);
-                d = getRandomInt(-20, 20);
-            } while (a === c || b === d);
-
+            let isValid = false;
+            while (!isValid) {
+                a = getRandomInt(-10, 10);
+                b = getRandomInt(-10, 10);
+                c = getRandomInt(-10, 10);
+                d = c - b;
+                if (a !== 0 && b !== 0 && d !== 0) {
+                    if (d % a === 0 || getGCD(a, d) === 1) {
+                        isValid = true;
+                    }
+                }
+            }
             currentA = a; currentB = b; currentC = c; currentD = d;
-            currentX = simplifyFrac(d - b, a - c);
-
+            currentX = simplifyFrac(d, a);
             let partL = `${formatCoefficient(a)}x ${formatNumWithSign(b)}`;
-            let partR = `${formatCoefficient(c)}x ${formatNumWithSign(d)}`;
-            document.getElementById('question-box').innerHTML = `$$ ${partL} = ${partR} $$`;
+            document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c} $$`;
             setupStep1Mode2();
+        } else if (quizMode === 'mode3') {
+            let a, b, c, sumAB;
+            let isValid = false;
+            while (!isValid) {
+                a = getRandomInt(-10, 10);
+                b = getRandomInt(-10, 10);
+                c = getRandomInt(-10, 10);
+                sumAB = a + b;
+                if (a !== 0 && b !== 0 && sumAB !== 0 && c !== 0) {
+                    if (c % sumAB === 0 || getGCD(sumAB, c) === 1) {
+                        isValid = true;
+                    }
+                }
+            }
+            currentA = a; currentB = b; currentC = c; currentD = sumAB;
+            currentX = simplifyFrac(c, sumAB);
+            let partL = `${formatCoefficient(a)}x ${formatNumWithSign(b)}x`;
+            document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c} $$`;
+            setupStep1Mode3();
         }
         MathJax.typesetPromise();
     }
@@ -287,12 +311,11 @@
     function setupStep1Mode2() {
         const container = document.getElementById('options1');
         const feedback = document.getElementById('q1-feedback');
-        
-        let correct = `${formatCoefficient(currentA)}x ${formatTermWithSign(-currentC, 'x')} = ${currentD} ${formatNumWithSign(-currentB)}`;
+        let correct = `${formatCoefficient(currentA)}x = ${currentC} ${formatNumWithSign(-currentB)}`;
         let choices = new Set([correct]);
-        choices.add(`${formatCoefficient(currentA)}x ${formatTermWithSign(currentC, 'x')} = ${currentD} ${formatNumWithSign(currentB)}`);
-        choices.add(`${formatCoefficient(currentA)}x ${formatTermWithSign(-currentC, 'x')} = ${currentB} ${formatNumWithSign(-currentD)}`);
-        choices.add(`${formatCoefficient(currentC)}x ${formatTermWithSign(-currentA, 'x')} = ${currentD} ${formatNumWithSign(-currentB)}`);
+        choices.add(`${formatCoefficient(currentA)}x = ${currentC} ${formatNumWithSign(currentB)}`);
+        choices.add(`${formatCoefficient(currentA)}x = ${-currentC} ${formatNumWithSign(-currentB)}`);
+        choices.add(`${formatCoefficient(-currentA)}x = ${currentC} ${formatNumWithSign(-currentB)}`);
 
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
@@ -301,7 +324,7 @@
                 setupStep2Mode2();
             } else {
                 isFirstTryQ1 = false;
-                feedback.innerHTML = `提示：將 $x$ 移向左邊，常數移向右邊，記得變號喔！`;
+                feedback.innerHTML = `提示：將常數 $${currentB}$ 移向右邊，記得變號喔！`;
                 MathJax.typesetPromise();
             }
         });
@@ -310,14 +333,11 @@
     function setupStep2Mode2() {
         const container = document.getElementById('options2');
         const feedback = document.getElementById('q2-feedback');
-        let combinedA = currentA - currentC;
-        let combinedB = currentD - currentB;
-        let correct = `${formatCoefficient(combinedA)}x = ${combinedB}`;
-        
+        let correct = `${formatCoefficient(currentA)}x = ${currentD}`;
         let choices = new Set([correct]);
-        choices.add(`${formatCoefficient(currentA + currentC)}x = ${combinedB}`);
-        choices.add(`${formatCoefficient(combinedA)}x = ${currentD + currentB}`);
-        choices.add(`${formatCoefficient(-combinedA)}x = ${combinedB}`);
+        choices.add(`${formatCoefficient(currentA)}x = ${currentC + currentB}`);
+        choices.add(`${formatCoefficient(currentA)}x = ${-currentD}`);
+        choices.add(`${formatCoefficient(-currentA)}x = ${currentD}`);
 
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
@@ -326,7 +346,7 @@
                 setupStep3Mode2();
             } else {
                 isFirstTryQ2 = false;
-                feedback.innerText = '計算有誤，請再檢查一次係數。';
+                feedback.innerText = '計算有誤，請再檢查一次常數項合併。';
             }
         });
     }
@@ -335,8 +355,12 @@
         const container = document.getElementById('options3');
         const feedback = document.getElementById('q3-feedback');
         let choices = new Set([currentX]);
-        choices.add(simplifyFrac(currentA - currentC, currentD - currentB));
-        while (choices.size < 4) choices.add(getRandomInt(-10, 10).toString());
+        choices.add(simplifyFrac(currentA, currentD));
+        choices.add(simplifyFrac(-currentD, currentA));
+        while (choices.size < 4) {
+            let rand = getRandomInt(-10, 10).toString();
+            if (!choices.has(rand)) choices.add(rand);
+        }
 
         renderButtons(container, Array.from(choices), currentX, (isCorrect) => {
             if (isCorrect) {
@@ -345,7 +369,51 @@
                 document.getElementById('next-btn').style.display = 'block';
             } else {
                 isFirstTryQ3 = false;
-                feedback.innerText = '最後一步了，加油！檢查一下正負號。';
+                feedback.innerText = '最後一步了，加油！檢查一下除法與正負號。';
+            }
+        });
+    }
+
+    function setupStep1Mode3() {
+        const container = document.getElementById('options1');
+        const feedback = document.getElementById('q1-feedback');
+        let correct = `${formatCoefficient(currentD)}x = ${currentC}`;
+        let choices = new Set([correct]);
+        choices.add(`${formatCoefficient(currentA - currentB)}x = ${currentC}`);
+        choices.add(`${formatCoefficient(currentD)}x = ${-currentC}`);
+        choices.add(`${formatCoefficient(-currentD)}x = ${currentC}`);
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ1) totalScore += 5;
+                document.getElementById('step2').style.display = 'block';
+                setupStep2Mode3();
+            } else {
+                isFirstTryQ1 = false;
+                feedback.innerHTML = `提示：合併左邊的 $x$ 項，$(${currentA} ${formatNumWithSign(currentB)})x$。`;
+                MathJax.typesetPromise();
+            }
+        });
+    }
+
+    function setupStep2Mode3() {
+        const container = document.getElementById('options2');
+        const feedback = document.getElementById('q2-feedback');
+        let choices = new Set([currentX]);
+        choices.add(simplifyFrac(currentD, currentC));
+        choices.add(simplifyFrac(-currentC, currentD));
+        while (choices.size < 4) {
+            let rand = getRandomInt(-10, 10).toString();
+            if (!choices.has(rand)) choices.add(rand);
+        }
+
+        renderButtons(container, Array.from(choices), currentX, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ2) totalScore += 5;
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                isFirstTryQ2 = false;
+                feedback.innerText = '檢查看看除法是否有誤。';
             }
         });
     }
