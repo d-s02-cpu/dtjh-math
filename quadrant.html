@@ -14,6 +14,7 @@
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     
     <style>
         :root {
@@ -40,6 +41,10 @@
         #question-box {
             font-size: 1.8rem; margin: 0.5rem 0 1.5rem 0; padding: 1rem;
             background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
+        }
+        /* 模式三專用的 Canvas 容器 */
+        #canvas-holder {
+            display: flex; justify-content: center; margin-bottom: 1rem;
         }
         .step-container {
             margin-top: 1rem; padding: 1rem; border-radius: 15px;
@@ -103,6 +108,7 @@
     <div style="display: flex; flex-direction: column; gap: 15px;">
         <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('findCoordinate')">模式一：判斷點 $P$ 在哪裡</button>
         <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('translation')">模式二：點的平移練習</button>
+        <button class="btn" style="background: var(--accent-color); color: white; border-color: var(--accent-color);" onclick="startQuiz('readChart')">模式三：圖形讀取練習</button>
     </div>
     
     <div id="qrcode-container">
@@ -118,6 +124,9 @@
     </div>
 
     <div class="question-text" id="mode-text">題目載入中...</div>
+    
+    <div id="canvas-holder"></div>
+
     <div id="question-box"></div>
 
     <div id="step1" class="step-container">
@@ -159,7 +168,8 @@
     let curX = 0, curY = 0, curK = 0, curDir = '';
     let questionCount = 0;
     let totalScore = 0;
-    let isFirstTrySteps = [true, true, true, true]; // 紀錄該題每個 step 是否為第一次嘗試
+    let isFirstTrySteps = [true, true, true, true];
+    let p5Instance = null;
 
     function startQuiz(mode) {
         quizMode = mode;
@@ -171,9 +181,12 @@
         if(mode === 'findCoordinate') {
             document.getElementById('mode-badge').innerText = '模式：位置判斷';
             document.getElementById('mode-text').innerText = '請判斷點 $P$ 所在的象限或坐標軸：';
-        } else {
+        } else if(mode === 'translation') {
             document.getElementById('mode-badge').innerText = '模式：平移練習';
             document.getElementById('mode-text').innerText = '請根據平移描述找出新坐標：';
+        } else {
+            document.getElementById('mode-badge').innerText = '模式：圖形讀取';
+            document.getElementById('mode-text').innerText = '請觀察圖中點 $P$ 的位置，寫出其坐標：';
         }
         
         generateQuestion();
@@ -199,17 +212,18 @@
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
         
         isFirstTrySteps = [true, true, true, true];
-
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('step1').style.display = 'block';
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step3').style.display = 'none';
         document.getElementById('step4').style.display = 'none';
-        
         document.getElementById('options1').innerHTML = '';
         document.getElementById('options2').innerHTML = '';
         document.getElementById('options3').innerHTML = '';
         document.getElementById('options4').innerHTML = '';
+        
+        // 清除舊繪圖
+        if (p5Instance) { p5Instance.remove(); p5Instance = null; }
 
         if (quizMode === 'findCoordinate') {
             document.getElementById('step1-title').innerText = '請點擊點 $P$ 所在的位置：';
@@ -219,36 +233,98 @@
             } while (curX === 0 && curY === 0);
             document.getElementById('question-box').innerHTML = `$$ P(${curX}, ${curY}) $$`;
             setupOptionsMode1();
-        } else {
-            // 模式二：平移
+        } else if (quizMode === 'translation') {
             curX = getRandomInt(-10, 10);
             curY = getRandomInt(-10, 10);
             curK = getRandomInt(1, 10);
             const dirs = ['向上', '向下', '向左', '向右'];
             curDir = dirs[getRandomInt(0, 3)];
             document.getElementById('question-box').innerHTML = `將 $P(${curX}, ${curY})$ ${curDir} $${curK}$ 單位到達 $Q$ 點`;
-            
-            if (questionCount <= 5) {
-                setupMode2StepByStep();
-            } else {
-                setupMode2Direct();
-            }
+            if (questionCount <= 5) setupMode2StepByStep();
+            else setupMode2Direct();
+        } else {
+            // 模式三：圖形讀取
+            curX = getRandomInt(-5, 5);
+            curY = getRandomInt(-5, 5);
+            document.getElementById('question-box').innerHTML = `圖中點 $P$ 的坐標為？`;
+            document.getElementById('step1-title').innerText = '請選擇正確的坐標：';
+            initP5(); // 初始化繪圖
+            setupOptionsMode3();
         }
         
         MathJax.typesetPromise();
     }
 
-    function setupOptionsMode1() {
-        const allOptions = ["第二象限", "第一象限", "第三象限", "第四象限", "$x$ 軸", "$y$ 軸"];
-        const correct = getCorrectLocation(curX, curY);
-        const container = document.getElementById('options1');
+    // --- P5.js 繪圖邏輯 ---
+    function initP5() {
+        const sketch = (p) => {
+            p.setup = () => {
+                let cnv = p.createCanvas(300, 300);
+                cnv.parent('canvas-holder');
+            };
+            p.draw = () => {
+                p.background(255);
+                let step = 25; // 每單位 25 像素
+                let originX = p.width / 2;
+                let originY = p.height / 2;
 
-        allOptions.forEach(opt => {
+                // 畫格線
+                p.stroke(230);
+                for(let i = -6; i <= 6; i++) {
+                    p.line(0, originY + i*step, p.width, originY + i*step);
+                    p.line(originX + i*step, 0, originX + i*step, p.height);
+                }
+
+                // 畫軸
+                p.stroke(0); p.strokeWeight(2);
+                p.line(0, originY, p.width, originY);
+                p.line(originX, 0, originX, p.height);
+
+                // 畫箭頭與文字
+                p.fill(0); p.noStroke();
+                p.textAlign(p.CENTER, p.CENTER);
+                p.text('x', p.width - 10, originY + 15);
+                p.text('y', originX - 15, 10);
+                
+                // 標記數字刻度 (簡單標記)
+                p.textSize(9);
+                for(let i = -5; i <= 5; i++) {
+                    if(i===0) continue;
+                    p.text(i, originX + i*step, originY + 12);
+                    p.text(i, originX - 12, originY - i*step);
+                }
+
+                // 畫點 P
+                p.fill(255, 0, 0);
+                p.ellipse(originX + curX*step, originY - curY*step, 10, 10);
+                p.fill(255, 0, 0);
+                p.textStyle(p.BOLD); p.textSize(14);
+                p.text('P', originX + curX*step + 12, originY - curY*step - 12);
+                p.noLoop();
+            };
+        };
+        p5Instance = new p5(sketch);
+    }
+
+    // --- 模式三 選項 ---
+    function setupOptionsMode3() {
+        const container = document.getElementById('options1');
+        let correctVal = `(${curX}, ${curY})`;
+        let options = new Set();
+        options.add(correctVal);
+        options.add(`(${curY}, ${curX})`);
+        options.add(`(${-curX}, ${curY})`);
+        options.add(`(${curX}, ${-curY})`);
+        
+        while(options.size < 4) {
+            options.add(`(${getRandomInt(-5,5)}, ${getRandomInt(-5,5)})`);
+        }
+
+        Array.from(options).sort(() => Math.random() - 0.5).forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'btn';
-            btn.innerHTML = opt;
+            btn.className = 'btn'; btn.innerHTML = `$${opt}$`;
             btn.onclick = () => {
-                if (opt === correct) {
+                if (opt === correctVal) {
                     btn.classList.add('correct');
                     if (isFirstTrySteps[0]) totalScore += 10;
                     container.querySelectorAll('.btn').forEach(b => b.disabled = true);
@@ -262,12 +338,30 @@
         });
     }
 
-    // 模式二：前五題 4 steps
+    // --- 原有模式邏輯 ---
+    function setupOptionsMode1() {
+        const allOptions = ["第二象限", "第一象限", "第三象限", "第四象限", "$x$ 軸", "$y$ 軸"];
+        const correct = getCorrectLocation(curX, curY);
+        const container = document.getElementById('options1');
+        allOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn'; btn.innerHTML = opt;
+            btn.onclick = () => {
+                if (opt === correct) {
+                    btn.classList.add('correct');
+                    if (isFirstTrySteps[0]) totalScore += 10;
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                } else { btn.classList.add('wrong'); isFirstTrySteps[0] = false; }
+            };
+            container.appendChild(btn);
+        });
+    }
+
     function setupMode2StepByStep() {
         const c1 = document.getElementById('options1');
         document.getElementById('step1-title').innerText = `Step 1: 「${curDir}」平移會影響哪一個坐標？`;
         const correctStep1 = (curDir === '向上' || curDir === '向下') ? '$y$ 坐標' : '$x$ 坐標';
-        
         ['$x$ 坐標', '$y$ 坐標'].forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = opt;
@@ -288,7 +382,6 @@
         const c2 = document.getElementById('options2');
         document.getElementById('step2-title').innerText = `Step 2: 「${curDir}」平移 $${curK}$ 單位，該坐標應該？`;
         const correctStep2 = (curDir === '向上' || curDir === '向右') ? `加 $${curK}$` : `減 $${curK}$`;
-        
         [`加 $${curK}$`, `減 $${curK}$`].forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = opt;
@@ -309,14 +402,8 @@
     function setupMode2Step3() {
         const c3 = document.getElementById('options3');
         document.getElementById('step3-title').innerText = `Step 3: 選出正確的算式：`;
-        let correctFormula = "";
-        if(curDir === '向上') correctFormula = `(${curX}, ${curY}+${curK})`;
-        else if(curDir === '向下') correctFormula = `(${curX}, ${curY}-${curK})`;
-        else if(curDir === '向左') correctFormula = `(${curX}-${curK}, ${curY})`;
-        else correctFormula = `(${curX}+${curK}, ${curY})`;
-
+        let correctFormula = (curDir==='向上') ? `(${curX}, ${curY}+${curK})` : (curDir==='向下') ? `(${curX}, ${curY}-${curK})` : (curDir==='向左') ? `(${curX}-${curK}, ${curY})` : `(${curX}+${curK}, ${curY})`;
         const formulas = [`(${curX}+${curK}, ${curY})`, `(${curX}-${curK}, ${curY})`, `(${curX}, ${curY}+${curK})`, `(${curX}, ${curY}-${curK})`].sort(() => Math.random() - 0.5);
-        
         formulas.forEach(form => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = `$${form}$`;
@@ -337,21 +424,14 @@
     function setupMode2Step4() {
         const c4 = document.getElementById('options4');
         document.getElementById('step4-title').innerText = `Step 4: 計算出 $Q$ 點最終坐標：`;
-        let finalQ = "";
-        if(curDir === '向上') finalQ = `(${curX}, ${curY + curK})`;
-        else if(curDir === '向下') finalQ = `(${curX}, ${curY - curK})`;
-        else if(curDir === '向左') finalQ = `(${curX - curK}, ${curY})`;
-        else finalQ = `(${curX + curK}, ${curY})`;
-
-        let options = createFinalOptions(finalQ);
-        options.forEach(opt => {
+        let finalQ = (curDir==='向上') ? `(${curX}, ${curY + curK})` : (curDir==='向下') ? `(${curX}, ${curY - curK})` : (curDir==='向左') ? `(${curX - curK}, ${curY})` : `(${curX + curK}, ${curY})`;
+        createFinalOptions(finalQ).forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = `$${opt}$`;
             btn.onclick = () => {
                 if(opt === finalQ) {
                     btn.classList.add('correct');
                     if(isFirstTrySteps[3]) totalScore += 2;
-                    // 全對加分
                     if(isFirstTrySteps.every(v => v === true)) totalScore += 2;
                     c4.querySelectorAll('.btn').forEach(b => b.disabled = true);
                     document.getElementById('next-btn').style.display = 'block';
@@ -362,22 +442,13 @@
         MathJax.typesetPromise();
     }
 
-    // 模式二：後五題 2 steps (舊邏輯)
     function setupMode2Direct() {
         const c1 = document.getElementById('options1');
         document.getElementById('step1-title').innerText = 'Step 1: 下列哪一個算式可以求出 $Q$ 點坐標?';
         document.getElementById('step2-title').innerText = 'Step 2: 所以，$Q$ 點坐標是多少?';
-        
-        let correctFormula = "";
-        let finalQ = "";
-        if(curDir === '向上') { correctFormula = `(${curX}, ${curY}+${curK})`; finalQ = `(${curX}, ${curY + curK})`; }
-        else if(curDir === '向下') { correctFormula = `(${curX}, ${curY}-${curK})`; finalQ = `(${curX}, ${curY - curK})`; }
-        else if(curDir === '向左') { correctFormula = `(${curX}-${curK}, ${curY})`; finalQ = `(${curX - curK}, ${curY})`; }
-        else { correctFormula = `(${curX}+${curK}, ${curY})`; finalQ = `(${curX + curK}, ${curY})`; }
-
-        const formulas = [`(${curX}+${curK}, ${curY})`, `(${curX}-${curK}, ${curY})`, `(${curX}, ${curY}+${curK})`, `(${curX}, ${curY}-${curK})`].sort(() => Math.random() - 0.5);
-        
-        formulas.forEach(form => {
+        let correctFormula = (curDir==='向上') ? `(${curX}, ${curY}+${curK})` : (curDir==='向下') ? `(${curX}, ${curY}-${curK})` : (curDir==='向左') ? `(${curX}-${curK}, ${curY})` : `(${curX}+${curK}, ${curY})`;
+        let finalQ = (curDir==='向上') ? `(${curX}, ${curY + curK})` : (curDir==='向下') ? `(${curX}, ${curY - curK})` : (curDir==='向左') ? `(${curX - curK}, ${curY})` : `(${curX + curK}, ${curY})`;
+        [`(${curX}+${curK}, ${curY})`, `(${curX}-${curK}, ${curY})`, `(${curX}, ${curY}+${curK})`, `(${curX}, ${curY}-${curK})`].sort(()=>Math.random()-0.5).forEach(form => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = `$${form}$`;
             btn.onclick = () => {
@@ -395,8 +466,7 @@
 
     function setupStep2Direct(correctVal) {
         const c2 = document.getElementById('options2');
-        let options = createFinalOptions(correctVal);
-        options.forEach(opt => {
+        createFinalOptions(correctVal).forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn'; btn.innerHTML = `$${opt}$`;
             btn.onclick = () => {
@@ -417,26 +487,24 @@
         options.add(correctVal);
         if (curDir === '向左' || curDir === '向右') {
             options.add(`(${curX + curK}, ${curY})`); options.add(`(${curX - curK}, ${curY})`);
-            options.add(`(${-curX + curK}, ${curY})`); options.add(`(${-curX - curK}, ${curY})`);
         } else {
             options.add(`(${curX}, ${curY + curK})`); options.add(`(${curX}, ${curY - curK})`);
-            options.add(`(${curX}, ${-curY + curK})`); options.add(`(${curX}, ${-curY - curK})`);
         }
         while(options.size < 4) {
-            let offset = getRandomInt(-5, 5); if(offset === 0) offset = 11;
-            if(curDir === '向左' || curDir === '向右') options.add(`(${curX + curK + offset}, ${curY})`);
-            else options.add(`(${curX}, ${curY + curK + offset})`);
+            options.add(`(${getRandomInt(-15,15)}, ${getRandomInt(-15,15)})`);
         }
         return Array.from(options).slice(0, 4).sort(() => Math.random() - 0.5);
     }
 
     function showResult() {
+        if (p5Instance) { p5Instance.remove(); p5Instance = null; }
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('final-score').innerText = totalScore + " 分";
     }
 
     function resetQuiz() {
+        if (p5Instance) { p5Instance.remove(); p5Instance = null; }
         questionCount = 0; totalScore = 0;
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-screen').style.display = 'none';
