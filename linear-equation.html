@@ -269,7 +269,6 @@
                 c = getRandomInt(-10, 10);
                 d = c - b;
                 if (a !== 0 && b !== 0 && d !== 0) {
-                    // 如果不是整數解，則係數a與常數d必須互質
                     if (d % a === 0 || getGCD(a, d) === 1) {
                         isValid = true;
                     }
@@ -291,7 +290,6 @@
                 c = getRandomInt(-10, 10);
                 if (a !== 0 && b !== 0 && c !== 0) {
                     let targetCoeff = (currentTargetVar === "x") ? a : b;
-                    // 確保分數解時，係數與常數互質
                     if (c % targetCoeff === 0 || getGCD(targetCoeff, c) === 1) {
                         isValid = true;
                     }
@@ -348,6 +346,10 @@
         choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${-currentC} ${formatNumWithSign(-currentB)}`);
         choices.add(`${formatCoefficient(-currentA)}${currentTargetVar} = ${currentC} ${formatNumWithSign(-currentB)}`);
         
+        while(choices.size < 4) {
+            choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${getRandomInt(-20, 20)}`);
+        }
+
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
                 if (isFirstTryQ1) totalScore += 3;
@@ -368,7 +370,11 @@
         let choices = new Set([correct]);
         choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${currentC + currentB}`);
         choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${-currentD}`);
-        choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${currentD + 1}`);
+        
+        while (choices.size < 4) {
+            let rand = getRandomInt(-20, 20);
+            choices.add(`${formatCoefficient(currentA)}${currentTargetVar} = ${rand}`);
+        }
 
         renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
@@ -407,14 +413,21 @@
     function setupStep1Mode3() {
         const container = document.getElementById('options1');
         const feedback = document.getElementById('q1-feedback');
+        
         let opt1 = `${formatCoefficient(currentA)}x = ${currentC}`;
         let opt2 = `${formatCoefficient(currentB)}y = ${currentC}`;
         let opt3 = `${formatCoefficient(-currentA)}x = ${currentC}`;
         let opt4 = `${formatCoefficient(-currentB)}y = ${currentC}`;
+        
         let correct = (currentTargetVar === "x") ? opt1 : opt2;
-        let choices = [opt1, opt2, opt3, opt4];
+        let choices = new Set([opt1, opt2, opt3, opt4]);
+        
+        // 確保至少有四個不同選項（雖然此處係數不同通常即不重複）
+        while(choices.size < 4) {
+            choices.add(`${getRandomInt(-10,10)}x = ${currentC}`);
+        }
 
-        renderButtons(container, choices, correct, (isCorrect) => {
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
             if (isCorrect) {
                 if (isFirstTryQ1) totalScore += 3;
                 document.getElementById('step2').style.display = 'block';
@@ -433,8 +446,11 @@
         let label = (currentTargetVar === "x") ? "x" : "y";
         let correct = `${label} = ${currentX}`;
         let choices = new Set([correct]);
+        
         let altVal = simplifyFrac(currentC, (currentTargetVar === "x" ? currentB : currentA));
         choices.add(`${label} = ${altVal}`);
+        choices.add(`${label} = ${simplifyFrac(-currentC, (currentTargetVar === "x" ? currentA : currentB))}`);
+        
         while(choices.size < 4) {
             let rand = getRandomInt(-10, 10);
             choices.add(`${label} = ${rand}`);
@@ -458,6 +474,8 @@
         let choices = new Set([correct]);
         choices.add((currentTargetVar === "x") ? `(x, y) = (0, ${currentX})` : `(x, y) = (${currentX}, 0)`);
         choices.add(`(x, y) = (0, 0)`);
+        choices.add(`(x, y) = (${currentX}, ${currentX})`);
+
         while(choices.size < 4) {
             let rx = getRandomInt(-5, 5);
             let ry = getRandomInt(-5, 5);
@@ -501,7 +519,7 @@
     function resetStepUI() {
         isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = true;
         document.getElementById('step2').style.display = 'none';
-        document.getElementById('step3').style.display = 'none';
+        document.getElementById('step3').style.display = (quizMode === 'mode1' ? 'none' : 'none');
         document.getElementById('next-btn').style.display = 'none';
         ['1','2','3'].forEach(num => {
             const opt = document.getElementById(`options${num}`);
