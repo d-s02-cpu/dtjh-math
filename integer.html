@@ -91,12 +91,12 @@
     <h2>苗栗大同國中資源中心</h2>
     <h3>整數加減循序練習</h3>
     <div class="desc-text">
-        本單元練習型態：$-a+b$ 與 $-a-b$。<br>
-        拆解思考步驟，建立正負數運算邏輯。
+        拆解思考步驟，建立正負數運算邏輯。<br>
+        請選擇練習模式：
     </div>
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('stepByStep')">開始練習：模式一 (循序拆解)</button>
-        <button class="btn" style="background: var(--accent-color); color: white; border-color: var(--accent-color);" onclick="startQuiz('direct')">開始練習：模式二 (挑戰模式)</button>
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('stepByStep')">模式一：基礎循序模式</button>
+        <button class="btn" style="background: var(--accent-color); color: white; border-color: var(--accent-color);" onclick="startQuiz('direct')">模式二：括號挑戰模式</button>
     </div>
     
     <div id="qrcode-container">
@@ -126,6 +126,12 @@
         <div class="options-grid" id="options2"></div>
     </div>
 
+    <div id="step-m2-1" class="step-container">
+        <span class="step-title" id="step-m2-1-title">Step 1. 簡化算式</span>
+        <div id="qm2-1-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options-m2-1"></div>
+    </div>
+
     <div id="step3" class="step-container">
         <span class="step-title" id="step3-title">Step 3. 算出最終結果</span>
         <div id="q3-feedback" class="feedback-text"></div>
@@ -145,10 +151,10 @@
 <script>
     let currentA = 0;
     let currentB = 0;
-    let type = ''; // '-a+b' or '-a-b'
+    let type = ''; 
     let questionCount = 0;
     let totalScore = 0;
-    let quizMode = 'stepByStep'; // 'stepByStep' or 'direct'
+    let quizMode = 'stepByStep'; 
     let stepCountCorrect = 0;
     let isFirstTryQ1 = true, isFirstTryQ2 = true, isFirstTryQ3 = true;
 
@@ -156,7 +162,13 @@
         quizMode = mode;
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
-        document.getElementById('mode-badge').innerText = mode === 'stepByStep' ? '目前模式：循序拆解' : '目前模式：挑戰模式';
+        
+        if (mode === 'stepByStep') {
+            document.getElementById('mode-badge').innerText = '模式：基礎循序';
+        } else {
+            document.getElementById('mode-badge').innerText = '模式：括號挑戰';
+        }
+        
         generateQuestion();
     }
 
@@ -177,28 +189,39 @@
         stepCountCorrect = 0;
         document.getElementById('step1').style.display = 'none';
         document.getElementById('step2').style.display = 'none';
+        document.getElementById('step-m2-1').style.display = 'none';
         document.getElementById('step3').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
         document.querySelectorAll('.feedback-text').forEach(f => f.innerText = '');
         document.querySelectorAll('.options-grid').forEach(o => o.innerHTML = '');
 
-        type = Math.random() > 0.5 ? '-a+b' : '-a-b';
         currentA = getRandomInt(1, 20);
         currentB = getRandomInt(1, 20);
 
-        if (type === '-a+b') {
-            document.getElementById('question-box').innerHTML = `$$ -${currentA} + ${currentB} $$`;
-        } else {
-            document.getElementById('question-box').innerHTML = `$$ -${currentA} - ${currentB} $$`;
-        }
-
         if (quizMode === 'stepByStep') {
-            document.getElementById('step1').style.display = 'block';
-            setupStep1();
+            type = Math.random() > 0.5 ? '-a+b' : '-a-b';
+            if (type === '-a+b') {
+                document.getElementById('question-box').innerHTML = `$$ -${currentA} + ${currentB} $$`;
+            } else {
+                document.getElementById('question-box').innerHTML = `$$ -${currentA} - ${currentB} $$`;
+            }
+
+            if (questionCount <= 5) {
+                document.getElementById('step1').style.display = 'block';
+                setupStep1();
+            } else {
+                document.getElementById('step3').style.display = 'block';
+                setupStep3();
+            }
         } else {
-            // 模式二直接顯示結果輸入
-            document.getElementById('step3').style.display = 'block';
-            setupStep3();
+            type = Math.random() > 0.5 ? 'a+(-b)' : 'a-(-b)';
+            if (type === 'a+(-b)') {
+                document.getElementById('question-box').innerHTML = `$$ ${currentA} + (-${currentB}) $$`;
+            } else {
+                document.getElementById('question-box').innerHTML = `$$ ${currentA} - (-${currentB}) $$`;
+            }
+            document.getElementById('step-m2-1').style.display = 'block';
+            setupStepM2_1();
         }
         MathJax.typesetPromise();
     }
@@ -206,7 +229,6 @@
     function setupStep1() {
         const container = document.getElementById('options1');
         const feedback = document.getElementById('q1-feedback');
-        
         let correct = '';
         let choices = [];
 
@@ -228,12 +250,8 @@
             btn.onclick = () => {
                 if (val === correct) {
                     btn.classList.add('correct');
-                    if (isFirstTryQ1) { 
-                        totalScore += (type === '-a+b') ? 3 : 5; 
-                        stepCountCorrect++; 
-                    }
+                    if (isFirstTryQ1) { totalScore += (type === '-a+b') ? 3 : 5; stepCountCorrect++; }
                     container.querySelectorAll('.btn').forEach(b => b.disabled = true);
-                    
                     if (type === '-a+b') {
                         document.getElementById('step2').style.display = 'block';
                         setupStep2();
@@ -255,13 +273,11 @@
         const container = document.getElementById('options2');
         const feedback = document.getElementById('q2-feedback');
         document.getElementById('step2-title').innerText = `Step 2. 承上題，最後的結果會是正的還是負的？`;
-        
         let correct = '';
         const resultValue = (-currentA + currentB);
         if (resultValue > 0) correct = '正的';
         else if (resultValue < 0) correct = '負的';
         else correct = '都不是';
-
         let choices = ['正的', '負的', '都不是', '不確定'];
 
         choices.sort(() => Math.random() - 0.5).forEach(val => {
@@ -283,43 +299,86 @@
         });
     }
 
-    function setupStep3() {
-        const container = document.getElementById('options3');
-        const feedback = document.getElementById('q3-feedback');
-        const resultValue = (type === '-a+b') ? (-currentA + currentB) : (-currentA - currentB);
+    function setupStepM2_1() {
+        const container = document.getElementById('options-m2-1');
+        const feedback = document.getElementById('qm2-1-feedback');
+        document.getElementById('step-m2-1-title').innerHTML = `Step 1. 下列哪個算式跟上面的題目相同？`;
         
-        if (quizMode === 'stepByStep') {
-            const stepNum = (type === '-a+b') ? '3' : '2';
-            document.getElementById('step3-title').innerText = `Step ${stepNum}. 所以最終結果算出來「得」多少？`;
-        } else {
-            document.getElementById('step3-title').innerText = `請直接選擇計算結果：`;
-        }
-
-        let choiceSet = new Set([resultValue]);
-        choiceSet.add(currentA + currentB);
-        choiceSet.add(Math.abs(currentA - currentB));
-        choiceSet.add(-(currentA + currentB));
-        choiceSet.add(currentA - currentB);
-        while(choiceSet.size < 4) choiceSet.add(resultValue + getRandomInt(-5, 5));
+        let correct = (type === 'a+(-b)') ? `${currentA} - ${currentB}` : `${currentA} + ${currentB}`;
+        let choiceSet = new Set([
+            `${currentA} - ${currentB}`,
+            `${currentA} + ${currentB}`,
+            `-${currentA} - ${currentB}`,
+            `-${currentA} + ${currentB}`
+        ]);
 
         Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
             const btn = document.createElement('button');
-            btn.className = 'btn'; 
-            btn.innerHTML = `$${val}$`;
+            btn.className = 'btn'; btn.innerHTML = `$${val}$`;
+            btn.onclick = () => {
+                if (val === correct) {
+                    btn.classList.add('correct');
+                    if (isFirstTryQ1) { totalScore += 5; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step3').style.display = 'block';
+                    setupStep3();
+                } else {
+                    btn.classList.add('wrong'); isFirstTryQ1 = false;
+                    feedback.innerText = '想一想，正負相遇會變什麼符號？';
+                }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise();
+    }
+
+    function setupStep3() {
+        const container = document.getElementById('options3');
+        const feedback = document.getElementById('q3-feedback');
+        
+        let resultValue = 0;
+        if (quizMode === 'stepByStep') {
+            resultValue = (type === '-a+b') ? (-currentA + currentB) : (-currentA - currentB);
+            if (questionCount <= 5) {
+                const stepNum = (type === '-a+b') ? '3' : '2';
+                document.getElementById('step3-title').innerText = `Step ${stepNum}. 所以最終結果算出來「得」多少？`;
+            } else {
+                document.getElementById('step3-title').innerText = `請直接選擇計算結果：`;
+            }
+        } else {
+            resultValue = (type === 'a+(-b)') ? (currentA - currentB) : (currentA + currentB);
+            document.getElementById('step3-title').innerText = `Step 2. 所以，最後答案是多少？`;
+        }
+
+        let choiceSet = new Set();
+        choiceSet.add(currentA + currentB);
+        choiceSet.add(currentA - currentB);
+        choiceSet.add(-currentA + currentB);
+        choiceSet.add(-currentA - currentB);
+        while(choiceSet.size < 4) {
+            let offset = getRandomInt(-5, 5);
+            if (offset !== 0) choiceSet.add(resultValue + offset);
+        }
+
+        Array.from(choiceSet).sort(() => Math.random() - 0.5).forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'btn'; btn.innerHTML = `$${val}$`;
             btn.onclick = () => {
                 if (parseInt(val) === resultValue) {
                     btn.classList.add('correct');
-                    if (quizMode === 'stepByStep') {
-                        if (isFirstTryQ3) { 
-                            totalScore += (type === '-a+b') ? 3 : 5; 
-                            stepCountCorrect++; 
+                    if (isFirstTryQ3) {
+                        if (quizMode === 'stepByStep') {
+                            if (questionCount <= 5) {
+                                totalScore += (type === '-a+b') ? 3 : 5;
+                                stepCountCorrect++;
+                                if (type === '-a+b' && stepCountCorrect === 3) totalScore += 1;
+                            } else {
+                                totalScore += 10;
+                            }
+                        } else {
+                            totalScore += 5; 
                         }
-                        if (type === '-a+b' && stepCountCorrect === 3) totalScore += 1;
-                    } else {
-                        // 模式二直接答對得 10 分
-                        if (isFirstTryQ3) totalScore += 10;
                     }
-                    
                     container.querySelectorAll('.btn').forEach(b => b.disabled = true);
                     document.getElementById('next-btn').style.display = 'block';
                 } else {
@@ -339,8 +398,7 @@
     }
 
     function resetQuiz() {
-        questionCount = 0;
-        totalScore = 0;
+        questionCount = 0; totalScore = 0;
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
@@ -348,9 +406,7 @@
 
     window.onload = function() {
         new QRCode(document.getElementById("qrcode"), {
-            text: window.location.href,
-            width: 128,
-            height: 128
+            text: window.location.href, width: 128, height: 128
         });
     };
 </script>
