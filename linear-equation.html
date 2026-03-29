@@ -88,7 +88,7 @@
 
 <div class="container" id="start-screen">
     <h2>苗栗大同國中資源中心</h2>
-    <h3 id="quiz-title">一元一次方程式練習</h3>
+    <h3 id="quiz-title">二元一次方程式練習</h3>
     <div class="desc-text" id="quiz-desc">
         請選擇練習模式：<br>
         難度隨題號增加：全正數 $\rightarrow$ 全負數 $\rightarrow$ 異號。
@@ -97,6 +97,7 @@
         <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('mode1')">模式一：$ax = b$ 型</button>
         <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('mode2')">模式二：$ax + b = c$ 型</button>
         <button class="btn" style="background: #9c27b0; color: white; border-color: #9c27b0;" onclick="startQuiz('mode3')">模式三：$ax + bx = c$ 型</button>
+        <button class="btn" style="background: #ff9800; color: white; border-color: #ff9800;" onclick="startQuiz('mode4')">模式四：$ax + by = c$ 代入型</button>
     </div>
     
     <div id="qrcode-container">
@@ -111,7 +112,7 @@
         <span id="mode-badge" class="mode-badge">練習模式</span>
     </div>
 
-    <div class="question-text" id="mode-text">求方程式中的 $x$：</div>
+    <div class="question-text" id="mode-text">求方程式中的未知數：</div>
     <div id="question-box"></div>
 
     <div id="step1" class="step-container" style="display: block;">
@@ -127,7 +128,7 @@
     </div>
 
     <div id="step3" class="step-container">
-        <span class="step-title" id="step3-hint">Q3. 方程式的解 $x = ?$</span>
+        <span class="step-title" id="step3-hint">Q3. 方程式的解</span>
         <div id="q3-feedback" class="feedback-text"></div>
         <div class="options-grid" id="options3"></div>
     </div>
@@ -152,6 +153,7 @@
 
     let currentA = 0, currentB = 0, currentC = 0, currentD = 0;
     let currentX = ""; 
+    let currentTargetVar = ""; // 模式一、四用：紀錄變數名稱
 
     function getGCD(a, b) {
         a = Math.abs(a);
@@ -182,7 +184,6 @@
         return n.toString();
     }
 
-    // 關鍵修正：針對非第一項的 x 係數處理加號與省略數字 1
     function formatSecondaryCoefficient(n) {
         if (n === 1) return "+ ";
         if (n === -1) return "- ";
@@ -202,18 +203,27 @@
         
         if (quizMode === 'mode1') {
             document.getElementById('mode-badge').innerText = '目前模式：ax = b';
-            document.getElementById('step1-title').innerText = 'Q1. 方程式的解 $x = ?$';
+            document.getElementById('step1-title').innerText = 'Q1. 方程式的解為？';
             document.getElementById('step3').style.display = 'none';
         } else if (quizMode === 'mode2') {
             document.getElementById('mode-badge').innerText = '目前模式：ax + b = c';
             document.getElementById('step1-title').innerText = 'Q1. 移項之後，方程式會變成？';
             document.getElementById('step2-hint').innerText = 'Q2. 化簡常數項，方程式會變成？';
             document.getElementById('step3-hint').innerText = 'Q3. 所以，方程式的解 $x = ?$';
+            document.getElementById('step2').style.display = 'none';
             document.getElementById('step3').style.display = 'none'; 
         } else if (quizMode === 'mode3') {
             document.getElementById('mode-badge').innerText = '目前模式：ax + bx = c';
             document.getElementById('step1-title').innerText = 'Q1. 同類項合併後，方程式會變成？';
             document.getElementById('step2-hint').innerText = 'Q2. 所以，方程式的解 $x = ?$';
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step3').style.display = 'none';
+        } else if (quizMode === 'mode4') {
+            document.getElementById('mode-badge').innerText = '目前模式：ax + by = c';
+            document.getElementById('step1-title').innerText = 'Q1. 代入後，方程式會變成？';
+            document.getElementById('step2-hint').innerText = 'Q2. 此時，未知數的值為？';
+            document.getElementById('step3-hint').innerText = 'Q3. 所以，哪一組數是方程的解？';
+            document.getElementById('step2').style.display = 'none';
             document.getElementById('step3').style.display = 'none';
         }
         
@@ -235,6 +245,10 @@
         resetStepUI();
 
         if (quizMode === 'mode1') {
+            currentTargetVar = (Math.random() > 0.5) ? "x" : "y";
+            document.getElementById('mode-text').innerText = `求方程式中的 $${currentTargetVar}$：`;
+            document.getElementById('step1-title').innerText = `Q1. 方程式的解 $${currentTargetVar} = ?$`;
+            
             let a, b, x_ans;
             if (questionCount >= 6) {
                 let a_pool = [-10,-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9,10];
@@ -251,9 +265,10 @@
                 x_ans = tempX.toString();
             }
             currentA = a; currentB = b; currentX = x_ans; 
-            document.getElementById('question-box').innerHTML = `$$ ${formatCoefficient(currentA)}x = ${currentB} $$`;
+            document.getElementById('question-box').innerHTML = `$$ ${formatCoefficient(currentA)}${currentTargetVar} = ${currentB} $$`;
             setupOptionsMode1();
         } else if (quizMode === 'mode2') {
+            document.getElementById('mode-text').innerText = "求方程式中的 $x$：";
             let a, b, c, d;
             let isValid = false;
             while (!isValid) {
@@ -273,6 +288,7 @@
             document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c} $$`;
             setupStep1Mode2();
         } else if (quizMode === 'mode3') {
+            document.getElementById('mode-text').innerText = "求方程式中的 $x$：";
             let a, b, c, sumAB;
             let isValid = false;
             while (!isValid) {
@@ -288,10 +304,32 @@
             }
             currentA = a; currentB = b; currentC = c; currentD = sumAB;
             currentX = simplifyFrac(c, sumAB);
-            // 修正點：第二項使用 formatSecondaryCoefficient
             let partL = `${formatCoefficient(a)}x ${formatSecondaryCoefficient(b)}x`;
             document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c} $$`;
             setupStep1Mode3();
+        } else if (quizMode === 'mode4') {
+            let a, b, c;
+            let isValid = false;
+            while (!isValid) {
+                a = getRandomInt(-10, 10);
+                b = getRandomInt(-10, 10);
+                c = getRandomInt(-10, 10);
+                if (a !== 0 && b !== 0) isValid = true;
+            }
+            currentA = a; currentB = b; currentC = c;
+            currentTargetVar = (Math.random() > 0.5) ? "x" : "y";
+            
+            document.getElementById('mode-text').innerText = `求方程式的解：`;
+            let cond = (currentTargetVar === "x") ? "y=0" : "x=0";
+            if (currentTargetVar === "x") {
+                currentX = simplifyFrac(c, a); 
+            } else {
+                currentX = simplifyFrac(c, b);
+            }
+            
+            let partL = `${formatCoefficient(a)}x ${formatSecondaryCoefficient(b)}y`;
+            document.getElementById('question-box').innerHTML = `$$ ${partL} = ${c}，且 ${cond} $$`;
+            setupStep1Mode4();
         }
         MathJax.typesetPromise();
     }
@@ -399,7 +437,6 @@
                 setupStep2Mode3();
             } else {
                 isFirstTryQ1 = false;
-                // 提示訊息也修正顯示方式
                 feedback.innerHTML = `提示：合併左邊的 $x$ 項，$(${currentA} ${formatSecondaryCoefficient(currentB).trim()})x$。`;
                 MathJax.typesetPromise();
             }
@@ -428,9 +465,77 @@
         });
     }
 
+    function setupStep1Mode4() {
+        const container = document.getElementById('options1');
+        const feedback = document.getElementById('q1-feedback');
+        
+        let opt1 = `${formatCoefficient(currentA)}x = ${currentC}`;
+        let opt2 = `${formatCoefficient(currentB)}y = ${currentC}`;
+        let opt3 = `${formatCoefficient(-currentA)}x = ${currentC}`;
+        let opt4 = `${formatCoefficient(-currentB)}y = ${currentC}`;
+        
+        let correct = (currentTargetVar === "x") ? opt1 : opt2;
+        let choices = [opt1, opt2, opt3, opt4];
+
+        renderButtons(container, choices, correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ1) totalScore += 3;
+                document.getElementById('step2').style.display = 'block';
+                setupStep2Mode4();
+            } else {
+                isFirstTryQ1 = false;
+                feedback.innerHTML = `提示：將 $0$ 代入變數後，那一項會消失，剩下係數與常數。`;
+                MathJax.typesetPromise();
+            }
+        });
+    }
+
+    function setupStep2Mode4() {
+        const container = document.getElementById('options2');
+        const feedback = document.getElementById('q2-feedback');
+        let label = (currentTargetVar === "x") ? "x" : "y";
+        let correct = `${label} = ${currentX}`;
+        let choices = new Set([correct]);
+        choices.add(`${label} = ${simplifyFrac(currentC, (currentTargetVar === "x" ? currentB : currentA))}`);
+        while(choices.size < 4) choices.add(`${label} = ${getRandomInt(-10, 10)}`);
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ2) totalScore += 3;
+                document.getElementById('step3').style.display = 'block';
+                setupStep3Mode4();
+            } else {
+                isFirstTryQ2 = false;
+                feedback.innerText = '請檢查二元一次方程式的計算。';
+            }
+        });
+    }
+
+    function setupStep3Mode4() {
+        const container = document.getElementById('options3');
+        const feedback = document.getElementById('q3-feedback');
+        let correct = (currentTargetVar === "x") ? `(x, y) = (${currentX}, 0)` : `(x, y) = (0, ${currentX})`;
+        let choices = new Set([correct]);
+        choices.add((currentTargetVar === "x") ? `(x, y) = (0, ${currentX})` : `(x, y) = (${currentX}, 0)`);
+        choices.add(`(x, y) = (0, 0)`);
+        while(choices.size < 4) choices.add(`(x, y) = (${getRandomInt(-5,5)}, ${getRandomInt(-5,5)})`);
+
+        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+            if (isCorrect) {
+                if (isFirstTryQ3) totalScore += 3;
+                if (isFirstTryQ1 && isFirstTryQ2 && isFirstTryQ3) totalScore += 1;
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                isFirstTryQ3 = false;
+                feedback.innerText = '請對應好 x 與 y 的位置。';
+            }
+        });
+    }
+
     function renderButtons(container, choices, correctValue, callback) {
         container.innerHTML = '';
-        choices.sort(() => Math.random() - 0.5).forEach(val => {
+        let shuffled = [...choices].sort(() => Math.random() - 0.5);
+        shuffled.forEach(val => {
             const btn = document.createElement('button');
             btn.className = 'btn';
             btn.innerHTML = `$${val}$`;
