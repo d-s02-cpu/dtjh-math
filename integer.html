@@ -214,11 +214,21 @@
                 setupStep3();
             }
         } else {
-            type = Math.random() > 0.5 ? 'a+(-b)' : 'a-(-b)';
+            // 模式二題目隨機化
+            const rand = Math.random();
+            if (rand < 0.25) type = 'a+(-b)';
+            else if (rand < 0.5) type = 'a-(-b)';
+            else if (rand < 0.75) type = '-a+(-b)';
+            else type = '-a-(-b)';
+
             if (type === 'a+(-b)') {
                 document.getElementById('question-box').innerHTML = `$$ ${currentA} + (-${currentB}) $$`;
-            } else {
+            } else if (type === 'a-(-b)') {
                 document.getElementById('question-box').innerHTML = `$$ ${currentA} - (-${currentB}) $$`;
+            } else if (type === '-a+(-b)') {
+                document.getElementById('question-box').innerHTML = `$$ -${currentA} + (-${currentB}) $$`;
+            } else {
+                document.getElementById('question-box').innerHTML = `$$ -${currentA} - (-${currentB}) $$`;
             }
             document.getElementById('step-m2-1').style.display = 'block';
             setupStepM2_1();
@@ -304,7 +314,12 @@
         const feedback = document.getElementById('qm2-1-feedback');
         document.getElementById('step-m2-1-title').innerHTML = `Step 1. 下列哪個算式跟上面的題目相同？`;
         
-        let correct = (type === 'a+(-b)') ? `${currentA} - ${currentB}` : `${currentA} + ${currentB}`;
+        let correct = '';
+        if (type === 'a+(-b)') correct = `${currentA} - ${currentB}`;
+        else if (type === 'a-(-b)') correct = `${currentA} + ${currentB}`;
+        else if (type === '-a+(-b)') correct = `-${currentA} - ${currentB}`;
+        else correct = `-${currentA} + ${currentB}`;
+
         let choiceSet = new Set([
             `${currentA} - ${currentB}`,
             `${currentA} + ${currentB}`,
@@ -324,9 +339,10 @@
                     setupStep3();
                 } else {
                     btn.classList.add('wrong'); isFirstTryQ1 = false;
-                    if (type === 'a+(-b)') {
+                    // 優化反饋：判斷題目性質給予提示
+                    if (type.includes('+(-')) {
                         feedback.innerText = '正負得負，再試一次！';
-                    } else {
+                    } else if (type.includes('-(-')) {
                         feedback.innerText = '負負得正，再試一次！';
                     }
                 }
@@ -350,15 +366,22 @@
                 document.getElementById('step3-title').innerText = `請直接選擇計算結果：`;
             }
         } else {
-            resultValue = (type === 'a+(-b)') ? (currentA - currentB) : (currentA + currentB);
+            // 模式二結果計算
+            if (type === 'a+(-b)') resultValue = currentA - currentB;
+            else if (type === 'a-(-b)') resultValue = currentA + currentB;
+            else if (type === '-a+(-b)') resultValue = -currentA - currentB;
+            else resultValue = -currentA + currentB;
             document.getElementById('step3-title').innerText = `Step 2. 所以，最後答案是多少？`;
         }
 
         let choiceSet = new Set();
+        choiceSet.add(resultValue);
+        // 生成干擾項
         choiceSet.add(currentA + currentB);
         choiceSet.add(currentA - currentB);
         choiceSet.add(-currentA + currentB);
         choiceSet.add(-currentA - currentB);
+        
         while(choiceSet.size < 4) {
             let offset = getRandomInt(-5, 5);
             if (offset !== 0) choiceSet.add(resultValue + offset);
