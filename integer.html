@@ -324,7 +324,11 @@
                     setupStep3();
                 } else {
                     btn.classList.add('wrong'); isFirstTryQ1 = false;
-                    feedback.innerText = '想一想，正負相遇會變什麼符號？';
+                    if (type === 'a+(-b)') {
+                        feedback.innerText = '正負得負，再試一次！';
+                    } else {
+                        feedback.innerText = '負負得正，再試一次！';
+                    }
                 }
             };
             container.appendChild(btn);
