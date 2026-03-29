@@ -422,7 +422,6 @@
         let correct = (currentTargetVar === "x") ? opt1 : opt2;
         let choices = new Set([opt1, opt2, opt3, opt4]);
         
-        // 確保至少有四個不同選項（雖然此處係數不同通常即不重複）
         while(choices.size < 4) {
             choices.add(`${getRandomInt(-10,10)}x = ${currentC}`);
         }
@@ -444,18 +443,35 @@
         const container = document.getElementById('options2');
         const feedback = document.getElementById('q2-feedback');
         let label = (currentTargetVar === "x") ? "x" : "y";
-        let correct = `${label} = ${currentX}`;
-        let choices = new Set([correct]);
+        let correctValStr = currentX;
+        let correctChoice = `${label} = ${correctValStr}`;
         
-        let altVal = simplifyFrac(currentC, (currentTargetVar === "x" ? currentB : currentA));
-        choices.add(`${label} = ${altVal}`);
-        choices.add(`${label} = ${simplifyFrac(-currentC, (currentTargetVar === "x" ? currentA : currentB))}`);
+        let choices = new Set([correctChoice]);
         
-        while(choices.size < 4) {
-            let rand = getRandomInt(-10, 10);
-            choices.add(`${label} = ${rand}`);
+        // 獲取當前的係數 A (如果是x) 或 B (如果是y) 以及常數 C
+        let activeCoeff = (currentTargetVar === "x") ? currentA : currentB;
+        let constVal = currentC;
+
+        if (correctValStr.includes("\\frac")) {
+            // 非整數解：套用模式一高級邏輯
+            choices.add(`${label} = ${simplifyFrac(activeCoeff, constVal)}`); // 倒數型
+            choices.add(`${label} = ${simplifyFrac(-constVal, activeCoeff)}`); // 相反數型
+            while (choices.size < 4) {
+                let rNum = getRandomInt(-10, 10);
+                let rDen = getRandomInt(2, 10);
+                choices.add(`${label} = ${simplifyFrac(rNum, rDen)}`);
+            }
+        } else {
+            // 整數解邏輯
+            let val = parseInt(correctValStr);
+            choices.add(`${label} = ${-val}`);
+            choices.add(`${label} = ${simplifyFrac(constVal, activeCoeff)}`);
+            while (choices.size < 4) {
+                choices.add(`${label} = ${getRandomInt(-10, 10)}`);
+            }
         }
-        renderButtons(container, Array.from(choices), correct, (isCorrect) => {
+
+        renderButtons(container, Array.from(choices), correctChoice, (isCorrect) => {
             if (isCorrect) {
                 if (isFirstTryQ2) totalScore += 3;
                 document.getElementById('step3').style.display = 'block';
@@ -519,7 +535,7 @@
     function resetStepUI() {
         isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = true;
         document.getElementById('step2').style.display = 'none';
-        document.getElementById('step3').style.display = (quizMode === 'mode1' ? 'none' : 'none');
+        document.getElementById('step3').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
         ['1','2','3'].forEach(num => {
             const opt = document.getElementById(`options${num}`);
