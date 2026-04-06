@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心 - 方程式與軸交點練習</title>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4caf50; 
+            --accent-color: #ff9800;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+            --step-bg: #fffbe6;
+            --mode3-color: #9c27b0;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; text-align: center;
+        }
+        .question-text { font-size: 1.1rem; color: #555; margin-bottom: 0.5rem; text-align: left; }
+        #question-box {
+            font-size: 1.8rem; margin: 0.5rem 0 1.5rem 0; padding: 1rem;
+            background: #f8f9fa; border-radius: 12px; border: 1px solid #eee;
+        }
+        #canvas-container {
+            display: flex; justify-content: center; margin: 10px 0;
+            background: #fff; border-radius: 8px;
+        }
+        .step-container {
+            margin-top: 1rem; padding: 1rem; border-radius: 15px;
+            background: var(--step-bg); border: 1px dashed #ffe58f;
+            display: none; 
+        }
+        .step-title { font-weight: bold; margin-bottom: 10px; color: #856404; display: block; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; align-items: center; }
+        .mode-badge { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #555; }
+        
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
+        
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        .desc-text { color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        #qrcode-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #qrcode {
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3>直角坐標系：全方位練習</h3>
+    <div class="desc-text">
+        請選擇練習模式：
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz('intercept')">模式一：軸交點練習</button>
+        <button class="btn" style="background: var(--secondary-color); color: white; border-color: var(--secondary-color);" onclick="startQuiz('line')">模式二：直線方程式判別</button>
+        <button class="btn" style="background: var(--mode3-color); color: white; border-color: var(--mode3-color);" onclick="startQuiz('origin')">模式三：原點通過判別</button>
+    </div>
+    
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+    </div>
+</div>
+
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 $1$ 題 / 共 $10$ 題</span>
+        <span id="mode-badge" class="mode-badge">練習模式</span>
+    </div>
+
+    <div class="question-text" id="mode-text">題目：</div>
+    <div id="question-box"></div>
+    <div id="canvas-container"></div>
+
+    <div id="step1" class="step-container">
+        <span class="step-title" id="step1-title">Step 1</span>
+        <div id="q1-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options1"></div>
+    </div>
+
+    <div id="step2" class="step-container">
+        <span class="step-title" id="step2-title">Step 2</span>
+        <div id="q2-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options2"></div>
+    </div>
+
+    <div id="step3" class="step-container">
+        <span class="step-title" id="step3-title">Step 3</span>
+        <div id="q3-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options3"></div>
+    </div>
+
+    <div id="step4" class="step-container">
+        <span class="step-title" id="step4-title">Step 4</span>
+        <div id="q4-feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options4"></div>
+    </div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">$0$</div>
+    <p>滿分 $100$ 分，測驗結束。</p>
+    <button class="btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
+<script>
+    let currentA, currentB, currentC, targetAxis, targetVal;
+    let lineM, lineN, lineType; // 模式二變數
+    let questionCount = 0;
+    let totalScore = 0;
+    let stepCorrectCount = 0;
+    let isFirstTryQ1, isFirstTryQ2, isFirstTryQ3, isFirstTryQ4;
+    let currentQuizMode = '';
+
+    // p5.js 畫布
+    let sketch = function(p) {
+        p.setup = function() {
+            let canvas = p.createCanvas(300, 300);
+            canvas.parent('canvas-container');
+            p.noLoop();
+        };
+        p.draw = function() {
+            p.background(255);
+            p.translate(p.width/2, p.height/2);
+            // 坐標軸
+            p.stroke(200); p.line(-p.width/2, 0, p.width/2, 0); p.line(0, -p.height/2, 0, p.height/2);
+            // 刻度
+            for(let i=-5; i<=5; i++) {
+                let pos = i * 25;
+                p.line(pos, -3, pos, 3); p.line(-3, pos, 3, pos);
+            }
+            if(currentQuizMode === 'line') {
+                p.stroke(74, 144, 226); p.strokeWeight(3);
+                if(lineType === 'x') {
+                    p.line(lineM * 25, -p.height/2, lineM * 25, p.height/2);
+                } else {
+                    p.line(-p.width/2, -lineN * 25, p.width/2, -lineN * 25);
+                }
+            }
+        };
+    };
+    let myp5;
+
+    function startQuiz(mode) {
+        currentQuizMode = mode;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        
+        let badgeText = '';
+        if(mode === 'intercept') badgeText = '軸交點練習';
+        else if(mode === 'line') badgeText = '直線方程式判別';
+        else if(mode === 'origin') badgeText = '原點通過判別';
+        
+        document.getElementById('mode-badge').innerText = badgeText;
+        if(!myp5) myp5 = new p5(sketch);
+        generateQuestion();
+    }
+
+    function getRandomInt(min, max) {
+        let res = Math.floor(Math.random() * (max - min + 1)) + min;
+        if(currentQuizMode === 'intercept') return res === 0 ? getRandomInt(min, max) : res;
+        return res;
+    }
+
+    function formatTerm(coeff, variable) {
+        if (coeff === 1) return variable;
+        if (coeff === -1) return "-" + variable;
+        return coeff + variable;
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) { showResult(); return; }
+        questionCount++;
+        document.getElementById('question-number').innerHTML = `第 $${questionCount}$ 題 / 共 $10$ 題`;
+        isFirstTryQ1 = isFirstTryQ2 = isFirstTryQ3 = isFirstTryQ4 = true;
+        stepCorrectCount = 0;
+        document.querySelectorAll('.step-container').forEach(s => s.style.display = 'none');
+        document.getElementById('next-btn').style.display = 'none';
+        document.querySelectorAll('.feedback-text').forEach(f => f.innerText = '');
+        document.querySelectorAll('.options-grid').forEach(o => o.innerHTML = '');
+        
+        // 控制畫布顯示
+        document.getElementById('canvas-container').style.display = currentQuizMode === 'line' ? 'flex' : 'none';
+
+        if(currentQuizMode === 'intercept') {
+            setupInterceptQuestion();
+        } else if(currentQuizMode === 'line') {
+            setupLineQuestion();
+        } else if(currentQuizMode === 'origin') {
+            setupOriginQuestion();
+        }
+        MathJax.typesetPromise();
+    }
+
+    // --- 模式一：軸交點 ---
+    function setupInterceptQuestion() {
+        currentA = getRandomInt(-10, 10);
+        currentB = getRandomInt(-10, 10);
+        let ansX = getRandomInt(-10, 10);
+        let ansY = getRandomInt(-10, 10);
+        targetAxis = Math.random() > 0.5 ? 'x' : 'y';
+        if (targetAxis === 'x') { currentC = currentA * ansX; targetVal = ansX; } 
+        else { currentC = currentB * ansY; targetVal = ansY; }
+
+        let aPart = formatTerm(currentA, "x");
+        let bPart = currentB > 0 ? `+ ${formatTerm(currentB, "y")}` : `- ${formatTerm(Math.abs(currentB), "y")}`;
+        document.getElementById('question-box').innerHTML = `$$ ${aPart} ${bPart} = ${currentC} $$`;
+        document.getElementById('mode-text').innerHTML = `請找出此方程式在 $${targetAxis}$ 軸上的交點坐標：`;
+        document.getElementById('step1').style.display = 'block';
+        setupInterceptStep1();
+    }
+
+    function setupInterceptStep1() {
+        const container = document.getElementById('options1');
+        document.getElementById('step1-title').innerHTML = `Step 1. 在 $${targetAxis}$ 軸上，哪一個坐標一定是 $0$？`;
+        const correct = (targetAxis === 'x' ? '$y = 0$' : '$x = 0$');
+        ['$x = 0$', '$y = 0$', '$x = 1$', '$y = 1$'].forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = val;
+            btn.onclick = () => {
+                if (val === correct) {
+                    btn.classList.add('correct'); if (isFirstTryQ1) { totalScore += 2; stepCorrectCount++; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step2').style.display = 'block'; setupInterceptStep2();
+                } else { 
+                    btn.classList.add('wrong'); isFirstTryQ1 = false; 
+                    document.getElementById('q1-feedback').innerHTML = `想一想，$${targetAxis}$ 軸上的點，上下(或左右)有移動嗎？`; 
+                    MathJax.typesetPromise([document.getElementById('q1-feedback')]); 
+                }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step1-title'), container]);
+    }
+
+    function setupInterceptStep2() {
+        const container = document.getElementById('options2');
+        const zeroVar = targetAxis === 'x' ? 'y' : 'x';
+        document.getElementById('step2-title').innerHTML = `Step 2. 將 $${zeroVar} = 0$ 代入後，方程式會變成？`;
+        let choiceA = `${formatTerm(currentA, "x")} = ${currentC}`, choiceNegA = `${formatTerm(-currentA, "x")} = ${currentC}`;
+        let choiceB = `${formatTerm(currentB, "y")} = ${currentC}`, choiceNegB = `${formatTerm(-currentB, "y")} = ${currentC}`;
+        let correctStr = targetAxis === 'x' ? choiceA : choiceB;
+        [choiceA, choiceNegA, choiceB, choiceNegB].sort(() => Math.random()-0.5).forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = `$${val}$`;
+            btn.onclick = () => {
+                if (val === correctStr) {
+                    btn.classList.add('correct'); if (isFirstTryQ2) { totalScore += 2; stepCorrectCount++; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step3').style.display = 'block'; setupInterceptStep3();
+                } else { btn.classList.add('wrong'); isFirstTryQ2 = false; document.getElementById('q2-feedback').innerHTML = '小心代入，其中一項會消失喔！'; }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step2-title'), container]);
+    }
+
+    function setupInterceptStep3() {
+        const container = document.getElementById('options3');
+        document.getElementById('step3-title').innerHTML = `Step 3. 承上題，算出 $${targetAxis}$ 的值是多少？`;
+        let choiceSet = new Set([targetVal, -targetVal, targetVal+1, targetVal-1]);
+        while(choiceSet.size < 4) choiceSet.add(getRandomInt(-10, 10));
+        Array.from(choiceSet).sort(() => Math.random()-0.5).forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = `$${targetAxis} = ${val}$`;
+            btn.onclick = () => {
+                if (val === targetVal) {
+                    btn.classList.add('correct'); if (isFirstTryQ3) { totalScore += 2; stepCorrectCount++; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step4').style.display = 'block'; setupInterceptStep4();
+                } else { btn.classList.add('wrong'); isFirstTryQ3 = false; document.getElementById('q3-feedback').innerHTML = '移項變換要檢查喔！'; }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step3-title'), container]);
+    }
+
+    function setupInterceptStep4() {
+        const container = document.getElementById('options4');
+        document.getElementById('step4-title').innerHTML = `Step 4. 最後，該交點的完整坐標是多少？`;
+        const correct = targetAxis === 'x' ? `$(${targetVal}, 0)$` : `$(0, ${targetVal})$`;
+        [correct, targetAxis === 'x' ? `$(0, ${targetVal})$` : `$(${targetVal}, 0)$`, `$(${targetVal}, ${targetVal})$`, `$(0, 0)$`].sort(() => Math.random()-0.5).forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = val;
+            btn.onclick = () => {
+                if (val === correct) {
+                    btn.classList.add('correct'); if (isFirstTryQ4) { totalScore += 2; stepCorrectCount++; }
+                    if (stepCorrectCount === 4) totalScore += 2;
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                } else { 
+                    btn.classList.add('wrong'); isFirstTryQ4 = false; 
+                    document.getElementById('q4-feedback').innerHTML = '記得坐標格式是 $(x, y)$ 喔！'; 
+                    MathJax.typesetPromise([document.getElementById('q4-feedback')]);
+                }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step4-title'), container]);
+    }
+
+    // --- 模式二：直線方程式判別 ---
+    function setupLineQuestion() {
+        lineType = Math.random() > 0.5 ? 'x' : 'y';
+        lineM = getRandomInt(-5, 5); lineN = getRandomInt(-5, 5);
+        document.getElementById('question-box').innerHTML = ``;
+        document.getElementById('mode-text').innerHTML = `如圖，這是哪一個方程式的圖形？`;
+        if(myp5) myp5.redraw();
+        document.getElementById('step1').style.display = 'block';
+        setupLineStep1();
+    }
+
+    function setupLineStep1() {
+        const container = document.getElementById('options1');
+        document.getElementById('step1-title').innerHTML = `Step 1. 這條直線的特徵是？`;
+        const correct = lineType === 'x' ? '垂直 $x$ 軸(鉛直線)' : '垂直 $y$ 軸(水平線)';
+        ['垂直 $x$ 軸(鉛直線)', '垂直 $x$ 軸(水平線)', '垂直 $y$ 軸(水平線)', '垂直 $y$ 軸(鉛直線)'].forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = val;
+            btn.onclick = () => {
+                if (val === correct) {
+                    btn.classList.add('correct'); if (isFirstTryQ1) { totalScore += 3; stepCorrectCount++; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step2').style.display = 'block'; setupLineStep2();
+                } else { btn.classList.add('wrong'); isFirstTryQ1 = false; document.getElementById('q1-feedback').innerHTML = '觀察看看直線是直立的還是橫向的？'; }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step1-title'), container]);
+    }
+
+    function setupLineStep2() {
+        const container = document.getElementById('options2');
+        const axisName = lineType === 'x' ? '$x$' : '$y$';
+        document.getElementById('step2-title').innerHTML = `Step 2. 這條直線與 ${axisName} 軸的交點是多少？`;
+        const val = lineType === 'x' ? lineM : lineN;
+        const correct = lineType === 'x' ? `$(${val}, 0)$` : `$(0, ${val})$`;
+        
+        let choiceSet = new Set();
+        choiceSet.add(correct);
+        while(choiceSet.size < 4) {
+            let randVal = getRandomInt(-5, 5);
+            let randAxis = Math.random() > 0.5 ? 'x' : 'y';
+            let c = randAxis === 'x' ? `$(${randVal}, 0)$` : `$(0, ${randVal})$`;
+            choiceSet.add(c);
+        }
+
+        Array.from(choiceSet).sort(() => Math.random()-0.5).forEach(valStr => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = valStr;
+            btn.onclick = () => {
+                if (valStr === correct) {
+                    btn.classList.add('correct'); if (isFirstTryQ2) { totalScore += 3; stepCorrectCount++; }
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('step3').style.display = 'block'; setupLineStep3();
+                } else { btn.classList.add('wrong'); isFirstTryQ2 = false; document.getElementById('q2-feedback').innerHTML = '數數看交點在哪裡？'; }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step2-title'), container]);
+    }
+
+    function setupLineStep3() {
+        const container = document.getElementById('options3');
+        document.getElementById('step3-title').innerHTML = `Step 3. 這條直線的方程式是什麼？`;
+        const correct = lineType === 'x' ? `$x = ${lineM}$` : `$y = ${lineN}$`;
+        
+        let choiceSet = new Set();
+        choiceSet.add(correct);
+        while(choiceSet.size < 4) {
+            let randVal = getRandomInt(-5, 5);
+            let randAxis = Math.random() > 0.5 ? 'x' : 'y';
+            let c = `$${randAxis} = ${randVal}$`;
+            choiceSet.add(c);
+        }
+
+        Array.from(choiceSet).sort(() => Math.random()-0.5).forEach(val => {
+            const btn = document.createElement('button'); btn.className = 'btn'; btn.innerHTML = val;
+            btn.onclick = () => {
+                if (val === correct) {
+                    btn.classList.add('correct'); if (isFirstTryQ3) { totalScore += 3; stepCorrectCount++; }
+                    if (stepCorrectCount === 3) totalScore += 1;
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                } else { 
+                    btn.classList.add('wrong'); isFirstTryQ3 = false; 
+                    document.getElementById('q3-feedback').innerHTML = '通過軸的名稱就是方程式的開頭喔！'; 
+                    MathJax.typesetPromise([document.getElementById('q3-feedback')]); 
+                }
+            };
+            container.appendChild(btn);
+        });
+        MathJax.typesetPromise([document.getElementById('step3-title'), container]);
+    }
+
+    // --- 模式三：原點通過判別 ---
+    function setupOriginQuestion() {
+        document.getElementById('mode-text').innerHTML = "下列哪一個方程式的圖形 通過 原點 $(0,0)$？";
+        document.getElementById('question-box').style.display = 'none'; 
+        
+        document.getElementById('step1').style.display = 'block';
+        document.getElementById('step1-title').innerHTML = "請選擇正確的方程式：";
+        const container = document.getElementById('options1');
+
+        let solutions = []; 
+        let usedTexts = new Set();
+
+        function createEquation(forcePass) {
+            let a = getRandomInt(-9, 9); if(a===0) a=1;
+            let b = getRandomInt(-9, 9); if(b===0) b=-1;
+            let c = forcePass ? 0 : (getRandomInt(1, 15) * (Math.random() > 0.5 ? 1 : -1));
+            
+            let eqType = Math.floor(Math.random() * 4);
+            let eqText = "";
+            switch(eqType) {
+                case 0: // ax + by = c
+                    eqText = `${formatTerm(a, "x")} ${b>0?'+':''} ${formatTerm(b, "y")} = ${c}`;
+                    break;
+                case 1: // x = ay + c
+                    eqText = `x = ${formatTerm(a, "y")} ${c > 0 ? '+ ' + c : (c < 0 ? '- ' + Math.abs(c) : '')}`;
+                    break;
+                case 2: // y = ax + c
+                    eqText = `y = ${formatTerm(a, "x")} ${c > 0 ? '+ ' + c : (c < 0 ? '- ' + Math.abs(c) : '')}`;
+                    break;
+                case 3: // ax = c
+                    eqText = `${formatTerm(a, "x")} = ${c}`;
+                    break;
+            }
+            return { text: eqText.trim(), isPass: (c === 0) };
+        }
+
+        // 1. 生成一個正確答案 (必須通過)
+        let correctObj = createEquation(true);
+        solutions.push(correctObj);
+        usedTexts.add(correctObj.text);
+
+        // 2. 生成三個干擾項 (必須不通過)
+        while(solutions.length < 4) {
+            let wrongObj = createEquation(false);
+            if(!usedTexts.has(wrongObj.text)) {
+                solutions.push(wrongObj);
+                usedTexts.add(wrongObj.text);
+            }
+        }
+
+        solutions.sort(() => Math.random() - 0.5).forEach(obj => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerHTML = `$${obj.text}$`;
+            btn.onclick = () => {
+                if(obj.isPass) {
+                    btn.classList.add('correct');
+                    // 模式三計分：第一題即為正確答案，首答正確得10分
+                    if(isFirstTryQ1) totalScore += 10;
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                    document.getElementById('q1-feedback').style.color = "var(--success-color)";
+                    document.getElementById('q1-feedback').innerHTML = "太棒了！常數項為 $0$ 的直線必通過原點。";
+                } else {
+                    btn.classList.add('wrong');
+                    isFirstTryQ1 = false;
+                    document.getElementById('q1-feedback').style.color = "var(--error-color)";
+                    document.getElementById('q1-feedback').innerHTML = "提示：常數項是否為 $0$？";
+                }
+                MathJax.typesetPromise([document.getElementById('q1-feedback')]);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function showResult() {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerHTML = `$${totalScore}$ 分`;
+        MathJax.typesetPromise([document.getElementById('result-screen')]);
+    }
+
+    function resetQuiz() {
+        questionCount = 0; totalScore = 0;
+        document.getElementById('question-box').style.display = 'block'; 
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    window.onload = function() {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href, width: 128, height: 128
+        });
+    };
+</script>
+
+</body>
+</html>
