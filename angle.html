@@ -117,7 +117,7 @@
         <span id="mode-badge" class="mode-badge">練習模式</span>
     </div>
 
-    <div class="question-text" id="mode-text">請根據題目回答：</div>
+    <div class="question-text" id="mode-text">請根據題目與圖形回答：</div>
     <div id="question-box"></div>
     <div id="canvas-holder"></div>
 
@@ -164,30 +164,74 @@
     let p5Instance = null;
 
     const sketch = (p) => {
-        let targetDegree = 0;
+        let drawMode = '';
+        let data = {};
+
         p.setup = () => {
-            p.createCanvas(240, 180);
+            p.createCanvas(300, 200);
             p.noLoop();
         };
-        p.drawAngle = (deg) => {
-            targetDegree = deg;
+
+        p.updateDrawing = (mode, params) => {
+            drawMode = mode;
+            data = params;
             p.redraw();
         };
+
         p.draw = () => {
             p.clear();
-            p.translate(p.width / 2 + 40, p.height / 2 + 30);
-            p.stroke(50);
-            p.strokeWeight(3);
-            p.line(0, 0, -80, 0);
-            p.push();
-            p.rotate(p.radians(-targetDegree));
-            p.line(0, 0, -80, 0);
-            p.pop();
-            p.noFill();
-            p.stroke(255, 152, 0);
-            p.strokeWeight(2);
-            let arcSize = 50;
-            p.arc(0, 0, arcSize, arcSize, p.radians(180 - targetDegree), p.radians(180));
+            if (drawMode === 'angle') {
+                p.translate(p.width / 2 + 40, p.height / 2 + 30);
+                p.stroke(50);
+                p.strokeWeight(3);
+                p.line(0, 0, -100, 0);
+                p.push();
+                p.rotate(p.radians(-data.deg));
+                p.line(0, 0, -100, 0);
+                p.pop();
+                p.noFill();
+                p.stroke(255, 152, 0);
+                p.strokeWeight(2);
+                let arcSize = 50;
+                p.arc(0, 0, arcSize, arcSize, p.radians(180 - data.deg), p.radians(180));
+            } 
+            else if (drawMode === 'triangleExternal') {
+                p.translate(50, 150);
+                let angleA = 50; 
+                let angleB = 60;
+                let angleC = 180 - (angleA + angleB);
+                
+                let sideCB = 150;
+                let B = p.createVector(sideCB, 0);
+                let C = p.createVector(0, 0);
+                let angleRadC = p.radians(angleC);
+                let sideCA = 120;
+                let A = p.createVector(p.cos(-angleRadC) * sideCA, p.sin(-angleRadC) * sideCA);
+
+                p.stroke(50);
+                p.strokeWeight(2);
+                p.line(A.x, A.y, B.x, B.y);
+                p.line(B.x, B.y, C.x, C.y);
+                p.line(C.x, C.y, A.x, A.y);
+
+                p.stroke(150);
+                p.drawingContext.setLineDash([5, 5]);
+                p.line(C.x, C.y, -60, 0);
+                p.drawingContext.setLineDash([]);
+
+                p.noStroke();
+                p.fill(0);
+                p.textSize(18);
+                p.text(data.labelTop, A.x - 5, A.y - 10);
+                p.text(data.labelRight, B.x + 5, B.y + 5);
+                p.text(data.labelVertex, C.x - 5, C.y + 25);
+
+                p.fill(255, 152, 0);
+                p.text('∠1', -45, -10);
+                p.noFill();
+                p.stroke(255, 152, 0);
+                p.arc(0, 0, 40, 40, p.radians(180), p.radians(360 - angleC));
+            }
         };
     };
 
@@ -217,7 +261,8 @@
             document.getElementById(`feedback-${i}`).innerText = '';
         }
         document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('canvas-holder').style.display = (quizMode === 'mode1') ? 'flex' : 'none';
+        
+        document.getElementById('canvas-holder').style.display = (quizMode === 'mode1' || quizMode === 'mode4') ? 'flex' : 'none';
 
         if (quizMode === 'mode1') setupMode1();
         else if (quizMode === 'mode2') setupMode2();
@@ -238,7 +283,7 @@
         let degree = target.val || Math.floor(Math.random() * (target.range[1] - target.range[0] + 1)) + target.range[0];
         
         document.getElementById('question-box').innerHTML = `請問 $${degree}^{\\circ}$ 是屬於哪一種角？`;
-        if(p5Instance) p5Instance.drawAngle(degree);
+        if(p5Instance) p5Instance.updateDrawing('angle', {deg: degree});
 
         document.getElementById('step-box-1').style.display = 'block';
         document.getElementById('step-title-1').innerText = "請選擇正確分類：";
@@ -364,7 +409,6 @@
         MathJax.typesetPromise();
     }
 
-    // --- Mode 3 Logic (Optimized) ---
     function toChineseNumber(n) {
         const chineseArr = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
         if (n <= 12) return chineseArr[n];
@@ -373,9 +417,8 @@
 
     function setupMode3() {
         let n, sum;
-        // 確保 (n-2)*180 能被 n 整除，且不出現小數點
         while(true) {
-            n = Math.floor(Math.random() * 7) + 3; // 3 到 9 邊形
+            n = Math.floor(Math.random() * 7) + 3; 
             sum = (n - 2) * 180;
             if (sum % n === 0) break;
         }
@@ -388,7 +431,6 @@
         const container = document.getElementById('options-1');
         const feedback = document.getElementById('feedback-1');
         
-        // 生成不重複選項
         let choiceSet = new Set();
         choiceSet.add(n-2);
         while(choiceSet.size < 4) {
@@ -513,26 +555,56 @@
     }
 
     function setupMode4() {
-        const a = Math.floor(Math.random() * 40) + 30, b = Math.floor(Math.random() * 40) + 30;
-        document.getElementById('question-box').innerHTML = `三角形 ABC 中，$\\angle 1$ 是 $\\angle C$ 的外角。若 $\\angle A = ${a}^{\\circ}$、$\\angle B = ${b}^{\\circ}$，請問 $\\angle 1$ 為幾度？`;
+        const aVal = Math.floor(Math.random() * 40) + 30;
+        const bVal = Math.floor(Math.random() * 40) + 30;
+        
+        let nodes = ['A', 'B', 'C'].sort(() => Math.random() - 0.5);
+        const vTop = nodes[0];    // 三角形上方的角
+        const vRight = nodes[1];  // 三角形右方的角
+        const vExt = nodes[2];    // 外角所在的角
+        
+        document.getElementById('question-box').innerHTML = `請觀察圖形，若 $\\angle ${vTop} = ${aVal}^{\\circ}$、$\\angle ${vRight} = ${bVal}^{\\circ}$，請問 $\\angle 1$ 為幾度？`;
+        
+        if(p5Instance) {
+            p5Instance.updateDrawing('triangleExternal', {
+                labelTop: vTop, 
+                labelRight: vRight, 
+                labelVertex: vExt
+            });
+        }
+
         document.getElementById('step-box-1').style.display = 'block';
-        document.getElementById('step-title-1').innerText = `Step 1. $\\angle 1$ 是哪一個角的外角？`;
-        renderOptions(1, ['$\\angle A$', '$\\angle B$', '$\\angle C$', '都不是'], '$\\angle C$', (correct) => {
+        document.getElementById('step-title-1').innerText = `Step 1. 觀察圖形，$\\angle 1$ 是哪一個角的外角？`;
+        renderOptions(1, [`$\\angle ${vTop}$`, `$\\angle ${vRight}$`, `$\\angle ${vExt}$`, '都不是'], `$\\angle ${vExt}$`, (correct) => {
             if (correct) {
                 if(isFirstTry[0]) { totalScore += 3; stepsCorrectInRound++; }
                 document.getElementById('step-box-2').style.display = 'block';
-                setupMode4Step2(a + b);
+                setupMode4Step2(vTop, vRight, vExt, aVal, bVal);
             }
         });
     }
 
-    function setupMode4Step2(ans) {
+    function setupMode4Step2(vTop, vRight, vExt, aVal, bVal) {
         document.getElementById('step-title-2').innerText = `Step 2. $\\angle 1$ 等於哪兩個內角的和？`;
-        renderOptions(2, ['$\\angle A + \\angle B$', '$\\angle B + \\angle C$', '$\\angle A + \\angle C$', '180度'], '$\\angle A + \\angle B$', (correct) => {
+        
+        // 【修正核心】正確答案必須是與外角頂點 (vExt) 不相鄰的兩個角
+        const nodes = ['A', 'B', 'C'];
+        const nonAdjacent = nodes.filter(n => n !== vExt); // 排除掉外角頂點
+        const correctAns = `$\\angle ${nonAdjacent[0]} + \\angle ${nonAdjacent[1]}$`;
+        
+        // 選項固定顯示為使用者要求的 A+B, A+C, B+C 結構
+        const choices = [
+            `$\\angle A + \\angle B$`,
+            `$\\angle A + \\angle C$`,
+            `$\\angle B + \\angle C$`,
+            `$180^{\\circ}$`
+        ];
+
+        renderOptions(2, choices, correctAns, (correct) => {
             if (correct) {
                 if(isFirstTry[1]) { totalScore += 3; stepsCorrectInRound++; }
                 document.getElementById('step-box-3').style.display = 'block';
-                setupMode4Step3(ans);
+                setupMode4Step3(aVal + bVal);
             }
         });
         MathJax.typesetPromise();
