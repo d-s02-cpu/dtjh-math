@@ -417,8 +417,9 @@
 
     function setupMode3() {
         let n, sum;
+        // 修改：範圍 4 到 12，且內角必須為整數 (排除 7, 9, 11)
         while(true) {
-            n = Math.floor(Math.random() * 7) + 3; 
+            n = Math.floor(Math.random() * 9) + 4; // 4 to 12
             sum = (n - 2) * 180;
             if (sum % n === 0) break;
         }
@@ -587,12 +588,10 @@
     function setupMode4Step2(vTop, vRight, vExt, aVal, bVal) {
         document.getElementById('step-title-2').innerText = `Step 2. $\\angle 1$ 等於哪兩個內角的和？`;
         
-        // 【修正核心】正確答案必須是與外角頂點 (vExt) 不相鄰的兩個角
         const nodes = ['A', 'B', 'C'];
-        const nonAdjacent = nodes.filter(n => n !== vExt); // 排除掉外角頂點
+        const nonAdjacent = nodes.filter(n => n !== vExt); 
         const correctAns = `$\\angle ${nonAdjacent[0]} + \\angle ${nonAdjacent[1]}$`;
         
-        // 選項固定顯示為使用者要求的 A+B, A+C, B+C 結構
         const choices = [
             `$\\angle A + \\angle B$`,
             `$\\angle A + \\angle C$`,
