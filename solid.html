@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心 - 立體空間關係練習</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4caf50; 
+            --accent-color: #ff9800;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; overflow-x: hidden;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 550px; text-align: center;
+        }
+        #canvas-holder {
+            width: 100%; height: 250px; background: #f8f9fa;
+            border-radius: 12px; border: 1px solid #eee;
+            margin: 0.5rem 0 1.5rem 0; display: flex;
+            justify-content: center; align-items: center; overflow: hidden;
+        }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; }
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        #qrcode-container { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        #qrcode { padding: 10px; background: white; border: 1px solid #ddd; }
+        .question-hint { background: #eef6ff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3>立體圖形與空間關係</h3>
+    <div style="margin-bottom: 1.5rem; color: #666;">
+        觀察 3D 圖形，練習判斷平面與線段的關係。
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white;" onclick="startQuiz('category')">模式一：基本分類判別</button>
+        <button class="btn" style="background: var(--accent-color); color: white;" onclick="startQuiz('space')">模式二：空間垂直平行挑戰</button>
+    </div>
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+    </div>
+</div>
+
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 1 題 / 共 10 題</span>
+        <span id="mode-badge" style="background:#eee; padding:4px 10px; border-radius:15px; font-size:0.8rem;"></span>
+    </div>
+
+    <div id="question-text-area" class="question-hint">請觀察圖形...</div>
+    <div id="canvas-holder"></div>
+
+    <div id="answer-area">
+        <div id="feedback" class="feedback-text"></div>
+        <div class="options-grid" id="options-buttons"></div>
+    </div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">0</div>
+    <p>滿分 100 分，測驗結束。</p>
+    <button class="btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
+<script>
+    let currentShape = {};
+    let questionCount = 0;
+    let totalScore = 0;
+    let quizMode = ''; 
+    let isFirstTry = true;
+
+    const shapes = [
+        { name: "三角柱", category: "角柱", faces: 3, isPrism: true },
+        { name: "四角柱", category: "角柱", faces: 4, isPrism: true },
+        { name: "五角柱", category: "角柱", faces: 5, isPrism: true },
+        { name: "六角柱", category: "角柱", faces: 6, isPrism: true },
+        { name: "三角錐", category: "角錐", faces: 3, isPrism: false },
+        { name: "四角錐", category: "角錐", faces: 4, isPrism: false },
+        { name: "五角錐", category: "角錐", faces: 5, isPrism: false },
+        { name: "圓柱", category: "圓柱", faces: 40, isPrism: true },
+        { name: "圓錐", category: "圓錐", faces: 40, isPrism: false }
+    ];
+
+    function setup() {
+        let cnv = createCanvas(300, 250, WEBGL);
+        cnv.parent('canvas-holder');
+        textFont('Arial');
+        textSize(16);
+    }
+
+    function draw() {
+        background(248, 249, 250);
+        if (!currentShape.name && quizMode !== 'space') return;
+        
+        ambientLight(150);
+        pointLight(255, 255, 255, 0, -100, 200);
+        
+        if (quizMode === 'space') {
+            rotateX(-PI/8);
+            rotateY(PI/6);
+            drawLabeledBox(100, 80, 100);
+        } else {
+            rotateX(frameCount * 0.01);
+            rotateY(frameCount * 0.02);
+            stroke(74, 144, 226);
+            fill(255, 255, 255, 200);
+            let h = 100, r = 50;
+            if (currentShape.isPrism) {
+                drawCylinderModel(currentShape.faces, r, h);
+            } else {
+                drawConeModel(currentShape.faces, r, h);
+            }
+        }
+    }
+
+    function drawLabeledBox(w, h, d) {
+        let hw = w/2, hh = h/2, hd = d/2;
+        let v = [
+            {pos: createVector(-hw,  hh,  hd), label: 'A'},
+            {pos: createVector( hw,  hh,  hd), label: 'B'},
+            {pos: createVector( hw,  hh, -hd), label: 'C'},
+            {pos: createVector(-hw,  hh, -hd), label: 'D'},
+            {pos: createVector(-hw, -hh,  hd), label: 'E'},
+            {pos: createVector( hw, -hh,  hd), label: 'F'},
+            {pos: createVector( hw, -hh, -hd), label: 'G'},
+            {pos: createVector(-hw, -hh, -hd), label: 'H'}
+        ];
+
+        noStroke();
+        fill(200, 220, 255, 150);
+        beginShape();
+        vertex(-hw - 30, hh, hd + 30);
+        vertex( hw + 30, hh, hd + 30);
+        vertex( hw + 30, hh, -hd - 30);
+        vertex(-hw - 30, hh, -hd - 30);
+        endShape(CLOSE);
+
+        stroke(50);
+        strokeWeight(1);
+        noFill();
+        box(w, h, d);
+
+        fill(0);
+        noStroke();
+        for (let i = 0; i < v.length; i++) {
+            push();
+            translate(v[i].pos.x, v[i].pos.y, v[i].pos.z);
+            rotateY(-PI/6);
+            rotateX(PI/8);
+            text(v[i].label, 5, -5);
+            pop();
+        }
+    }
+
+    function drawCylinderModel(sides, r, h) {
+        for (let i = 0; i < 2; i++) {
+            let y = i === 0 ? -h/2 : h/2;
+            beginShape();
+            for (let a = 0; a < TWO_PI; a += TWO_PI / sides) vertex(cos(a) * r, y, sin(a) * r);
+            endShape(CLOSE);
+        }
+        beginShape(QUAD_STRIP);
+        for (let a = 0; a <= TWO_PI + 0.1; a += TWO_PI / sides) {
+            vertex(cos(a) * r, -h/2, sin(a) * r);
+            vertex(cos(a) * r, h/2, sin(a) * r);
+        }
+        endShape();
+    }
+
+    function drawConeModel(sides, r, h) {
+        beginShape();
+        for (let a = 0; a < TWO_PI; a += TWO_PI / sides) vertex(cos(a) * r, h/2, sin(a) * r);
+        endShape(CLOSE);
+        beginShape(TRIANGLE_FAN);
+        vertex(0, -h/2, 0);
+        for (let a = 0; a <= TWO_PI + 0.1; a += TWO_PI / sides) vertex(cos(a) * r, h/2, sin(a) * r);
+        endShape();
+    }
+
+    function startQuiz(mode) {
+        quizMode = mode;
+        questionCount = 0; totalScore = 0;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        document.getElementById('mode-badge').innerText = mode === 'category' ? '基本分類' : '空間關係';
+        generateQuestion();
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) { showResult(); return; }
+        questionCount++;
+        isFirstTry = true;
+        document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('feedback').innerText = '';
+        const container = document.getElementById('options-buttons');
+        container.innerHTML = '';
+
+        currentShape = shapes[Math.floor(Math.random() * shapes.length)];
+
+        let choices = ["平行", "垂直", "不一定", "無法確定"];
+        let correctAns = "";
+
+        if (quizMode === 'category') {
+            document.getElementById('question-text-area').innerText = "觀察圖形，它屬於哪一類？";
+            choices = ["角柱", "角錐", "圓柱", "圓錐"];
+            correctAns = currentShape.category;
+        } else {
+            const items = ["地板", "牆壁", "柱子"];
+            if (currentShape.isPrism) items.push("天花板");
+            
+            let i1 = Math.floor(Math.random() * items.length);
+            let i2;
+            do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+            
+            let obj1 = items[i1];
+            let obj2 = items[i2];
+            document.getElementById('question-text-area').innerText = `請問【${obj1}】跟【${obj2}】的關係是？`;
+            correctAns = getSpaceRelation(obj1, obj2);
+        }
+
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = text;
+            btn.onclick = () => {
+                if (text === correctAns) {
+                    btn.classList.add('correct');
+                    if (isFirstTry) totalScore += 10;
+                    container.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                    document.getElementById('feedback').innerText = '正確！好棒的觀察力！';
+                } else {
+                    btn.classList.add('wrong');
+                    isFirstTry = false;
+                    document.getElementById('feedback').innerText = '不對喔，再仔細觀察圖形。';
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    // 模式二邏輯：根據表格直接進行名稱對比判斷
+    function getSpaceRelation(a, b) {
+        // 確保順序不影響判斷
+        if ((a === "地板" && b === "天花板") || (a === "天花板" && b === "地板")) return "平行";
+        
+        if ((a === "地板" && b === "牆壁") || (a === "牆壁" && b === "地板")) return "垂直";
+        if ((a === "地板" && b === "柱子") || (a === "柱子" && b === "地板")) return "垂直";
+        
+        if ((a === "天花板" && b === "牆壁") || (a === "牆壁" && b === "天花板")) return "垂直";
+        if ((a === "天花板" && b === "柱子") || (a === "柱子" && b === "天花板")) return "垂直";
+        
+        if ((a === "牆壁" && b === "柱子") || (a === "柱子" && b === "牆壁")) return "平行";
+        
+        if (a === "柱子" && b === "柱子") return "平行";
+        if (a === "牆壁" && b === "牆壁") return "不一定";
+
+        return "不一定";
+    }
+
+    function showResult() {
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = totalScore + " 分";
+    }
+
+    function resetQuiz() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+    }
+
+    window.onload = () => {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href, width: 120, height: 120
+        });
+    };
+</script>
+
+</body>
+</html>
