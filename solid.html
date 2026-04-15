@@ -31,7 +31,8 @@
             width: 100%; height: 250px; background: #f8f9fa;
             border-radius: 12px; border: 1px solid #eee;
             margin: 0.5rem 0 1.5rem 0; display: flex;
-            justify-content: center; align-items: center; overflow: hidden;
+            justify-content: center; align-items: center; 
+            overflow: hidden; touch-action: none; /* 防止平板拖曳畫布導致滾動 */
         }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
         .btn {
@@ -118,10 +119,18 @@
     ];
 
     function setup() {
-        let cnv = createCanvas(300, 250, WEBGL);
+        let holder = document.getElementById('canvas-holder');
+        // 明確指定尺寸避免平板初始載入寬度計算為0
+        let cnv = createCanvas(holder.clientWidth || 300, 250, WEBGL);
         cnv.parent('canvas-holder');
         textFont('Arial');
         textSize(16);
+        setAttributes('antialias', true);
+    }
+
+    function windowResized() {
+        let holder = document.getElementById('canvas-holder');
+        resizeCanvas(holder.clientWidth, 250);
     }
 
     function draw() {
@@ -181,6 +190,7 @@
         for (let i = 0; i < v.length; i++) {
             push();
             translate(v[i].pos.x, v[i].pos.y, v[i].pos.z);
+            // 修正 WEBGL 座標文字旋轉以維持平板可讀性
             rotateY(-PI/6);
             rotateX(PI/8);
             text(v[i].label, 5, -5);
@@ -219,6 +229,8 @@
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
         document.getElementById('mode-badge').innerText = mode === 'category' ? '基本分類' : '空間關係';
+        // 觸發一次畫布重整，確保 WEBGL 在平板顯示區域正確
+        windowResized();
         generateQuestion();
     }
 
@@ -276,22 +288,15 @@
         });
     }
 
-    // 模式二邏輯：根據表格直接進行名稱對比判斷
     function getSpaceRelation(a, b) {
-        // 確保順序不影響判斷
         if ((a === "地板" && b === "天花板") || (a === "天花板" && b === "地板")) return "平行";
-        
         if ((a === "地板" && b === "牆壁") || (a === "牆壁" && b === "地板")) return "垂直";
         if ((a === "地板" && b === "柱子") || (a === "柱子" && b === "地板")) return "垂直";
-        
         if ((a === "天花板" && b === "牆壁") || (a === "牆壁" && b === "天花板")) return "垂直";
         if ((a === "天花板" && b === "柱子") || (a === "柱子" && b === "天花板")) return "垂直";
-        
         if ((a === "牆壁" && b === "柱子") || (a === "柱子" && b === "牆壁")) return "平行";
-        
         if (a === "柱子" && b === "柱子") return "平行";
         if (a === "牆壁" && b === "牆壁") return "不一定";
-
         return "不一定";
     }
 
