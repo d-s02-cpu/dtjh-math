@@ -32,7 +32,7 @@
             border-radius: 12px; border: 1px solid #eee;
             margin: 0.5rem 0 1.5rem 0; display: flex;
             justify-content: center; align-items: center; 
-            overflow: hidden; touch-action: none; /* 防止平板拖曳畫布導致滾動 */
+            overflow: hidden; touch-action: none;
         }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
         .btn {
@@ -114,23 +114,22 @@
         { name: "三角錐", category: "角錐", faces: 3, isPrism: false },
         { name: "四角錐", category: "角錐", faces: 4, isPrism: false },
         { name: "五角錐", category: "角錐", faces: 5, isPrism: false },
-        { name: "圓柱", category: "圓柱", faces: 40, isPrism: true },
-        { name: "圓錐", category: "圓錐", faces: 40, isPrism: false }
+        { name: "圓柱", category: "圓柱", faces: 48, isPrism: true },
+        { name: "圓錐", category: "圓錐", faces: 48, isPrism: false }
     ];
 
     function setup() {
         let holder = document.getElementById('canvas-holder');
-        // 明確指定尺寸避免平板初始載入寬度計算為0
         let cnv = createCanvas(holder.clientWidth || 300, 250, WEBGL);
         cnv.parent('canvas-holder');
+        pixelDensity(1); // 穩定平板渲染
         textFont('Arial');
         textSize(16);
-        setAttributes('antialias', true);
     }
 
     function windowResized() {
         let holder = document.getElementById('canvas-holder');
-        resizeCanvas(holder.clientWidth, 250);
+        if(holder) resizeCanvas(holder.clientWidth, 250);
     }
 
     function draw() {
@@ -190,7 +189,6 @@
         for (let i = 0; i < v.length; i++) {
             push();
             translate(v[i].pos.x, v[i].pos.y, v[i].pos.z);
-            // 修正 WEBGL 座標文字旋轉以維持平板可讀性
             rotateY(-PI/6);
             rotateX(PI/8);
             text(v[i].label, 5, -5);
@@ -198,28 +196,46 @@
         }
     }
 
+    // 修正柱體繪製邏輯，防止在平板破圖
     function drawCylinderModel(sides, r, h) {
-        for (let i = 0; i < 2; i++) {
-            let y = i === 0 ? -h/2 : h/2;
-            beginShape();
-            for (let a = 0; a < TWO_PI; a += TWO_PI / sides) vertex(cos(a) * r, y, sin(a) * r);
-            endShape(CLOSE);
+        let angleStep = TWO_PI / sides;
+        // Top cap
+        beginShape();
+        for (let i = 0; i < sides; i++) {
+            vertex(cos(i * angleStep) * r, -h/2, sin(i * angleStep) * r);
         }
-        beginShape(QUAD_STRIP);
-        for (let a = 0; a <= TWO_PI + 0.1; a += TWO_PI / sides) {
-            vertex(cos(a) * r, -h/2, sin(a) * r);
-            vertex(cos(a) * r, h/2, sin(a) * r);
+        endShape(CLOSE);
+        // Bottom cap
+        beginShape();
+        for (let i = 0; i < sides; i++) {
+            vertex(cos(i * angleStep) * r, h/2, sin(i * angleStep) * r);
+        }
+        endShape(CLOSE);
+        // Side walls - 使用 TRIANGLE_STRIP 增加穩定性
+        beginShape(TRIANGLE_STRIP);
+        for (let i = 0; i <= sides; i++) {
+            let x = cos(i * angleStep) * r;
+            let z = sin(i * angleStep) * r;
+            vertex(x, -h/2, z);
+            vertex(x, h/2, z);
         }
         endShape();
     }
 
     function drawConeModel(sides, r, h) {
+        let angleStep = TWO_PI / sides;
+        // Base cap
         beginShape();
-        for (let a = 0; a < TWO_PI; a += TWO_PI / sides) vertex(cos(a) * r, h/2, sin(a) * r);
+        for (let i = 0; i < sides; i++) {
+            vertex(cos(i * angleStep) * r, h/2, sin(i * angleStep) * r);
+        }
         endShape(CLOSE);
+        // Cone sides
         beginShape(TRIANGLE_FAN);
-        vertex(0, -h/2, 0);
-        for (let a = 0; a <= TWO_PI + 0.1; a += TWO_PI / sides) vertex(cos(a) * r, h/2, sin(a) * r);
+        vertex(0, -h/2, 0); // Apex
+        for (let i = 0; i <= sides; i++) {
+            vertex(cos(i * angleStep) * r, h/2, sin(i * angleStep) * r);
+        }
         endShape();
     }
 
@@ -229,7 +245,6 @@
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'block';
         document.getElementById('mode-badge').innerText = mode === 'category' ? '基本分類' : '空間關係';
-        // 觸發一次畫布重整，確保 WEBGL 在平板顯示區域正確
         windowResized();
         generateQuestion();
     }
@@ -256,11 +271,9 @@
         } else {
             const items = ["地板", "牆壁", "柱子"];
             if (currentShape.isPrism) items.push("天花板");
-            
             let i1 = Math.floor(Math.random() * items.length);
             let i2;
             do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
-            
             let obj1 = items[i1];
             let obj2 = items[i2];
             document.getElementById('question-text-area').innerText = `請問【${obj1}】跟【${obj2}】的關係是？`;
@@ -309,6 +322,7 @@
     function resetQuiz() {
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
+        currentShape = {};
     }
 
     window.onload = () => {
