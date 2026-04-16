@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苗栗大同國中資源中心 - 三角形全等性質練習</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4caf50; 
+            --accent-color: #ff9800;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --bg-color: #f5f7fa;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+        }
+        .container {
+            background: white; padding: 2rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%; max-width: 600px; text-align: center;
+        }
+        .question-text { font-size: 1.1rem; color: #555; margin-bottom: 0.5rem; text-align: left; }
+        #canvas-container {
+            background: #fff; border-radius: 12px; border: 1px solid #eee;
+            margin: 0.5rem 0 1.5rem 0; display: flex; justify-content: center;
+            overflow-x: auto; 
+        }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn {
+            padding: 1rem; font-size: 1.1rem; border: 2px solid var(--primary-color);
+            background: white; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .correct { background: var(--success-color) !important; color: white; border-color: var(--success-color); }
+        .wrong { background: var(--error-color) !important; color: white; border-color: var(--error-color); }
+        #next-btn {
+            margin-top: 1.5rem; padding: 1rem; background: var(--primary-color);
+            color: white; border: none; border-radius: 50px; font-size: 1.1rem;
+            display: none; width: 100%; cursor: pointer;
+        }
+        .feedback-text { color: var(--error-color); font-weight: bold; margin-bottom: 10px; min-height: 1.2rem; }
+        #quiz-status { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #666; font-weight: bold; align-items: center; }
+        .mode-badge { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #555; }
+        
+        #start-screen, #quiz-container, #result-screen { display: none; }
+        #start-screen { display: block; } 
+        
+        .score-display { font-size: 3rem; color: var(--primary-color); margin: 1rem 0; }
+        .desc-text { color: #666; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        #qrcode-container {
+            margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        #qrcode { padding: 10px; background: white; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <h2>苗栗大同國中資源中心</h2>
+    <h3>三角形全等性質辨識</h3>
+    <div class="desc-text">
+        觀察圖形中標示的邊角資訊（數字），<br>
+        判斷這兩個三角形是根據哪種性質全等？
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <button class="btn" style="background: var(--primary-color); color: white; border-color: var(--primary-color);" onclick="startQuiz()">開始練習</button>
+    </div>
+    
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+        <span style="font-size: 0.8rem; color: #888;">掃描 QR Code 分享練習</span>
+    </div>
+</div>
+
+<div class="container" id="quiz-container">
+    <div id="quiz-status">
+        <span id="question-number">第 1 題 / 共 10 題</span>
+        <span id="mode-badge" class="mode-badge">全等性質辨識</span>
+    </div>
+
+    <div class="question-text">根據圖中標示的數據，兩個三角形全等是依據：</div>
+    <div id="canvas-container"></div>
+    <div id="q-feedback" class="feedback-text"></div>
+    <div class="options-grid" id="options-box"></div>
+
+    <button id="next-btn" onclick="generateQuestion()">下一題</button>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>練習完成！</h2>
+    <div class="score-display" id="final-score">0</div>
+    <p>測驗結束，恭喜完成三角形全等性質練習！</p>
+    <button class="btn" id="back-to-menu-btn" style="width: 100%; background: var(--primary-color); color: white;" onclick="resetQuiz()">回主選單</button>
+</div>
+
+<script>
+    let questionCount = 0;
+    let totalScore = 0;
+    let currentCorrectAnswer = '';
+    const allProperties = ['SSS', 'SAS', 'ASA', 'AAS', 'RHS'];
+    let sketch = null;
+
+    function startQuiz() {
+        questionCount = 0;
+        totalScore = 0;
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+        generateQuestion();
+    }
+
+    function generateQuestion() {
+        if (questionCount >= 10) {
+            showResult();
+            return;
+        }
+
+        questionCount++;
+        document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
+        document.getElementById('q-feedback').innerText = '';
+        document.getElementById('next-btn').style.display = 'none';
+        
+        currentCorrectAnswer = allProperties[Math.floor(Math.random() * allProperties.length)];
+        setupOptions();
+        
+        if (sketch) {
+            sketch.remove();
+            sketch = null;
+        }
+        sketch = new p5(trianglesSketch, 'canvas-container');
+    }
+
+    function setupOptions() {
+        const container = document.getElementById('options-box');
+        container.innerHTML = '';
+        allProperties.forEach(prop => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = prop;
+            btn.onclick = () => {
+                if (prop === currentCorrectAnswer) {
+                    btn.classList.add('correct');
+                    totalScore += 10;
+                    const allBtns = container.querySelectorAll('.btn');
+                    allBtns.forEach(b => b.disabled = true);
+                    document.getElementById('next-btn').style.display = 'block';
+                } else {
+                    btn.classList.add('wrong');
+                    document.getElementById('q-feedback').innerText = '再觀察看看題目給出的數字條件！';
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    const trianglesSketch = (p) => {
+        let valA, valB, valC, ang1, ang2;
+
+        p.setup = () => {
+            p.createCanvas(500, 260);
+            p.noLoop();
+            p.textSize(18);
+            p.textStyle(p.NORMAL); 
+            p.textAlign(p.CENTER, p.CENTER);
+            
+            valA = p.floor(p.random(6, 12));
+            valB = p.floor(p.random(13, 18));
+            valC = p.floor(p.sqrt(valA*valA + valB*valB));
+            ang1 = p.floor(p.random(35, 50));
+            ang2 = 90 - ang1;
+        };
+
+        p.draw = () => {
+            p.background(255);
+            p.stroke(0);
+            p.strokeWeight(2);
+            p.noFill();
+
+            let t1 = [{x: 50, y: 190}, {x: 180, y: 190}, {x: 180, y: 80}];
+            let t2 = [{x: 300, y: 190}, {x: 430, y: 190}, {x: 430, y: 80}];
+
+            drawSingleTriangle(t1);
+            drawSingleTriangle(t2);
+            markData(t1, t2);
+        };
+
+        function drawSingleTriangle(pts) {
+            p.stroke(0);
+            p.strokeWeight(2);
+            p.noFill();
+            p.triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y);
+        }
+
+        function markData(t1, t2) {
+            p.noStroke();
+            p.fill(0);
+
+            switch (currentCorrectAnswer) {
+                case 'SSS':
+                    markSideVal(t1, t2, 0, 1, valB);
+                    markSideVal(t1, t2, 1, 2, valA);
+                    markSideVal(t1, t2, 2, 0, valC);
+                    break;
+                case 'SAS':
+                    markSideVal(t1, t2, 0, 1, valB);
+                    markAngleVal(t1, t2, 1, "90°");
+                    markSideVal(t1, t2, 1, 2, valA);
+                    break;
+                case 'ASA':
+                    markAngleVal(t1, t2, 0, ang1 + "°");
+                    markSideVal(t1, t2, 0, 1, valB);
+                    markAngleVal(t1, t2, 1, "90°");
+                    break;
+                case 'AAS':
+                    markAngleVal(t1, t2, 0, ang1 + "°");
+                    markAngleVal(t1, t2, 2, ang2 + "°");
+                    markSideVal(t1, t2, 1, 2, valA);
+                    break;
+                case 'RHS':
+                    markRightSymbol(t1, t2, 1);
+                    markSideVal(t1, t2, 2, 0, valC);
+                    markSideVal(t1, t2, 1, 2, valA);
+                    break;
+            }
+        }
+
+        function markSideVal(t1, t2, p1idx, p2idx, val) {
+            p.noStroke();
+            p.fill(0);
+            [t1, t2].forEach(t => {
+                let midX = (t[p1idx].x + t[p2idx].x) / 2;
+                let midY = (t[p1idx].y + t[p2idx].y) / 2;
+                if (p1idx === 0 && p2idx === 1) midY += 22;
+                else if (p1idx === 1 && p2idx === 2) midX += 22;
+                else { midX -= 25; midY -= 15; }
+                p.text(val, midX, midY);
+            });
+        }
+
+        function markAngleVal(t1, t2, pIdx, val) {
+            p.noStroke();
+            p.fill(0);
+            [t1, t2].forEach(t => {
+                let pCurr = t[pIdx];
+                let offX = 0, offY = 0;
+                
+                // 針對 90度 進行位置優化，縮短偏移量
+                if (val === "90°") {
+                    offX = -22; offY = -22; 
+                } else {
+                    if (pIdx === 0) { offX = 40; offY = -12; }
+                    else if (pIdx === 1) { offX = -30; offY = -25; }
+                    else { offX = -15; offY = 35; }
+                }
+                
+                p.text(val, pCurr.x + offX, pCurr.y + offY);
+            });
+        }
+
+        function markRightSymbol(t1, t2, pIdx) {
+            p.noFill();
+            p.stroke(0);
+            p.strokeWeight(1.5); 
+            [t1, t2].forEach(t => {
+                let pCurr = t[pIdx];
+                p.rect(pCurr.x - 15, pCurr.y - 15, 15, 15);
+            });
+        }
+    };
+
+    function showResult() {
+        if (sketch) {
+            sketch.remove();
+            sketch = null;
+        }
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = totalScore + " 分";
+    }
+
+    function resetQuiz() {
+        questionCount = 0; 
+        totalScore = 0;
+        if (sketch) {
+            sketch.remove();
+            sketch = null;
+        }
+        
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+
+        const allBtns = document.querySelectorAll('.btn');
+        allBtns.forEach(b => b.disabled = false);
+    }
+
+    window.onload = function() {
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href, width: 128, height: 128
+        });
+    };
+</script>
+
+</body>
+</html>
