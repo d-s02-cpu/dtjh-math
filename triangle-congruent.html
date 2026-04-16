@@ -107,6 +107,7 @@
     let questionCount = 0;
     let totalScore = 0;
     let currentCorrectAnswer = '';
+    let hasAttempted = false; // 新增：用來紀錄該題是否已經點選過
     const allProperties = ['SSS', 'SAS', 'ASA', 'AAS', 'RHS'];
     let sketch = null;
 
@@ -126,6 +127,7 @@
         }
 
         questionCount++;
+        hasAttempted = false; // 每題開始時重設嘗試狀態
         document.getElementById('question-number').innerText = `第 ${questionCount} 題 / 共 10 題`;
         document.getElementById('q-feedback').innerText = '';
         document.getElementById('next-btn').style.display = 'none';
@@ -150,12 +152,17 @@
             btn.onclick = () => {
                 if (prop === currentCorrectAnswer) {
                     btn.classList.add('correct');
-                    totalScore += 10;
+                    // 只有在第一次就答對時才加分（或您可以改成只要答對就加分，此處修正原本邏輯）
+                    if (!hasAttempted) {
+                        totalScore += 10;
+                    }
                     const allBtns = container.querySelectorAll('.btn');
                     allBtns.forEach(b => b.disabled = true);
                     document.getElementById('next-btn').style.display = 'block';
                 } else {
                     btn.classList.add('wrong');
+                    btn.disabled = true; // 點錯後禁用該選項
+                    hasAttempted = true; // 紀錄已經錯過，這題不給分
                     document.getElementById('q-feedback').innerText = '再觀察看看題目給出的數字條件！';
                 }
             };
@@ -254,7 +261,6 @@
                 let pCurr = t[pIdx];
                 let offX = 0, offY = 0;
                 
-                // 針對 90度 進行位置優化，縮短偏移量
                 if (val === "90°") {
                     offX = -22; offY = -22; 
                 } else {
@@ -299,9 +305,6 @@
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('quiz-container').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
-
-        const allBtns = document.querySelectorAll('.btn');
-        allBtns.forEach(b => b.disabled = false);
     }
 
     window.onload = function() {
