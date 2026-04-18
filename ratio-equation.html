@@ -291,7 +291,10 @@
                     setupStep2_M1(targetX);
                 } else {
                     btn.classList.add('wrong'); isFirstTryQ1 = false;
-                    feedback.innerText = '提示：外項乘積 = 內項乘積';
+                    feedback.innerText =
+                    `提示：
+                    1. 外項：內項 = 內項：外項
+                    2. 外項乘積 = 內項乘積（外外 = 內內）`;
                 }
             };
             container.appendChild(btn);
