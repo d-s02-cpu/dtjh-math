@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <!-- 響應式 viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 引入 MathJax -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- 引入 QRCode.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <!-- 響應式 CSS -->
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; }
+        #qrcode { margin-top: 20px; }
+        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+
+        @media (min-width: 600px) and (max-width: 1024px) {
+            body { font-size: 18px; padding: 20px; }
+        }
+        @media (max-width: 599px) {
+            body { font-size: 16px; padding: 10px; }
+        }
+        @media (min-width: 1025px) {
+            body { font-size: 20px; padding: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- QR Code 容器 -->
+    <div id="qrcode"></div>
+
+    <!-- 單純的按鈕 -->
+    <button>開始練習(限時1分鐘)</button>
+
+    <script>
+        // 取得當前頁面網址
+        var currentURL = window.location.href;
+        // 生成 QR Code
+        new QRCode(document.getElementById("qrcode"), {
+            text: currentURL,
+            width: 200,
+            height: 200
+        });
+    </script>
+</body>
+</html>
